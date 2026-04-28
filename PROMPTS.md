@@ -121,3 +121,84 @@ UI: /login, /, /sku, /sku/[id], /methodology. - да
 ````text
 Просмотри новые инструкции проекта и файл источников PROJECT_PLAN.md и пересобери PROMPTS.md в соответствии с форматом.
 ````
+
+## Prompt 6 — Старт разработки: инициализация Next.js и каркаса MVP
+````text
+Коммит сделан, документы залиты на гитхаб. Давай начнем работу по нашему плану.
+````
+
+## Prompt 7 — Cursor Agent: создание базового каркаса Next.js проекта
+````text
+Ты работаешь в проекте AIForecast.
+
+Контекст:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй PROJECT_PLAN.md.
+- Стек уже утверждён: Next.js App Router, React, TypeScript, Tailwind CSS, Recharts, Supabase, OpenRouter, Vercel.
+- Backend должен быть только через Next.js Route Handlers внутри app/api/.
+- Отдельный backend на Express/FastAPI/Nest/Fastify не создавать.
+- Supabase используем cloud, локальный Supabase через Docker не используем.
+- Сейчас выполняем только Этап 1: базовый каркас проекта.
+
+Задача:
+1. Проверь, что проект создан как Next.js App Router без src directory.
+2. Приведи структуру проекта к PROJECT_PLAN.md.
+3. Создай пустые или минимальные placeholder-страницы:
+   - app/login/page.tsx
+   - app/page.tsx
+   - app/sku/page.tsx
+   - app/sku/[id]/page.tsx
+   - app/methodology/page.tsx
+4. Создай директории:
+   - components/auth
+   - components/dashboard
+   - components/sku
+   - components/charts
+   - components/ui
+   - lib/auth
+   - lib/supabase
+   - lib/ai
+   - lib/dashboard
+   - lib/utils
+   - types
+   - supabase/migrations
+5. Создай файлы:
+   - types/inventory.ts
+   - types/ai.ts
+   - .env.example
+6. В .env.example добавь строго такие переменные:
+   NEXT_PUBLIC_SUPABASE_URL=
+   SUPABASE_SERVICE_ROLE_KEY=
+   JWT_SECRET=
+   OPENROUTER_API_KEY=
+   OPENROUTER_MODEL=openai/gpt-4o-mini
+   OPENROUTER_SITE_URL=http://localhost:3000
+   OPENROUTER_APP_TITLE=AIForecast
+   AI_BATCH_LIMIT=5
+7. Обнови metadata в app/layout.tsx:
+   title: AIForecast
+   description: AI-прогнозирование запасов лекарственных средств
+8. Сделай минимальный визуальный shell:
+   - нейтральный layout;
+   - ссылки на Dashboard, SKU, Methodology;
+   - без реальной бизнес-логики;
+   - без обращения к Supabase/OpenRouter на этом этапе.
+9. Убедись, что npm run build проходит.
+
+Ограничения:
+- Не меняй PROJECT_PLAN.md.
+- Не меняй PROMPTS.md на этом шаге.
+- Не добавляй реальные API ключи.
+- Не создавай .env.local.
+- Не создавай отдельный backend.
+- Не добавляй ORM.
+- Не добавляй Supabase local config.
+- Не добавляй Docker для Supabase.
+- Не реализуй auth, database schema или AI endpoint сейчас — это следующие этапы.
+- Если create-next-app создал AGENTS.md или CLAUDE.md, можно оставить, но не пиши туда противоречивые инструкции.
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- команды, которые нужно запустить;
+- есть ли ошибки build/lint.
+````

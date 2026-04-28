@@ -13,3 +13,4 @@ Extension: Claude Code for VS Code Anthropic [Team Plan]
 MCP - npx -y chrome-devtools-mcp@latest
 SourceTree 3.4.30 
 GitHub - https://github.com/Otto1Koester/AIForecast
+Репозиторий клонирован на локальную машину по этому пути - C:\Workspace\AIForecast

@@ -202,3 +202,55 @@ UI: /login, /, /sku, /sku/[id], /methodology. - да
 - команды, которые нужно запустить;
 - есть ли ошибки build/lint.
 ````
+
+## Prompt 8 — Замечания к базовому shell и переход к Supabase schema
+````text
+Ответ от курсора:
+
+Готово. Этап 1 закрыт: проект уже был создан как Next.js App Router без src/, я только привёл структуру к PROJECT_PLAN.md и сделал минимальный визуальный shell.
+
+Созданные файлы
+Страницы (App Router):
+
+app/page.tsx — переписан, нейтральный дашборд-плейсхолдер с KPI-плитками.
+app/login/page.tsx — placeholder с задизейбленной формой username/password.
+app/sku/page.tsx — placeholder каталога SKU.
+app/sku/[id]/page.tsx — placeholder карточки SKU (params: Promise<{ id: string }>, как в Next.js 16).
+app/methodology/page.tsx — placeholder методологии.
+Типы:
+
+types/inventory.ts — SkuItem, InventoryLot, InventoryMovement, AppUser, StorageCondition, AbcClass.
+types/ai.ts — AiForecastAnalysis и связанные типы по схеме из §11 плана + AiForecastRecord, AiForecastRun.
+Конфиг:
+
+.env.example — строго 8 переменных из ТЗ.
+.gitignore — добавлено исключение !.env.example (иначе он попадал под .env*).
+Директории (с .gitkeep, чтобы git их видел):
+
+components/auth, components/dashboard, components/sku, components/charts, components/ui
+lib/auth, lib/supabase, lib/ai, lib/dashboard, lib/utils
+supabase/migrations
+Изменённые файлы
+app/layout.tsx — обновлён metadata (title: "AIForecast", description: "AI-прогнозирование запасов лекарственных средств"), lang="ru", добавлен общий shell: header с логотипом, навигацией Dashboard / SKU / Methodology, кнопкой «Войти», main и footer. Tailwind, без обращения к Supabase/OpenRouter.
+.gitignore — добавлен !.env.example.
+Что НЕ менялось
+PROJECT_PLAN.md, PROMPTS.md — не трогал.
+package.json — все нужные зависимости (next, react, tailwindcss, recharts, @supabase/supabase-js, openai, zod, bcryptjs, jose) уже стояли, ничего не доставлял.
+AGENTS.md / CLAUDE.md — оставил как есть, без противоречивых инструкций.
+Никаких реальных API-ключей, .env.local, отдельного backend, ORM, локального Supabase, Docker для Supabase, auth/AI/DB-логики не добавлял — это следующие этапы.
+Команды для запуска
+npm install
+npm run dev
+npm run build
+npm run lint
+(Перед npm run dev — скопировать .env.example в .env.local и заполнить значения; на этом этапе они ещё не используются в коде.)
+
+Build / Lint статус
+npm run build — успешно: Next.js 16.2.4, скомпилировано за ~5.8s, статически сгенерированы маршруты /, /login, /methodology, /sku, и динамический /sku/[id]. Ошибок нет.
+npm run lint — успешно, без сообщений.
+ReadLints по app/ и types/ — без диагностик.
+
+Всё работает и закоммитано, как ты написал в инструкции. Однако, стартовая страница сейчас не login, а дашборд. При этом с точки зрения UI вверху указана вкладка dashboard, которой не должно быть, т.к. переход на страницу дашборд должен осуществляться через надпись сервиса AIForecast. Также не должно быть кнопки вход - форма авторизации должна появляться сразу при заходе на сервис, если пользователь не авторизован. При этом если пользователь авторизован, то форма логина не должна появляться, а вместо кнопки войти, должна быть кнопка выйти, которая ведет на страницу авторизации. Просмотри скриншот и учти текущее состояние проекта при дальнейшем планировании шагов.
+
+Если у тебя нет замечаний по этому этапу, то можем переходить к следующему.
+````

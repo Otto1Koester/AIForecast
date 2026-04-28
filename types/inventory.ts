@@ -54,3 +54,7 @@ export type AppUser = {
   displayName: string | null;
   createdAt: string;
 };
+
+export type AppUserAuthRecord = AppUser & {
+  passwordHash: string;
+};

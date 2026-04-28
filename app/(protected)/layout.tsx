@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/auth/LogoutButton";
 import { requireCurrentUser } from "@/lib/auth/current-user";
 
 const navLinks: Array<{ href: string; label: string }> = [
+  { href: "/", label: "Dashboard" },
   { href: "/sku", label: "SKU" },
   { href: "/methodology", label: "Methodology" },
 ];

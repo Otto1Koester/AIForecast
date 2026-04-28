@@ -26,13 +26,15 @@ export default function HomePage() {
             <p className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
               —
             </p>
-            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{kpi.hint}</p>
+            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              {kpi.hint}
+            </p>
           </div>
         ))}
       </div>
 
       <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-        Этап 1: базовый каркас. Реальные данные дашборда подключим на следующих этапах.
+        Данные будут загружены из Supabase на следующих этапах.
       </div>
     </section>
   );

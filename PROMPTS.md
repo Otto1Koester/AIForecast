@@ -254,3 +254,263 @@ ReadLints по app/ и types/ — без диагностик.
 
 Если у тебя нет замечаний по этому этапу, то можем переходить к следующему.
 ````
+
+## Prompt 9 — Codex: Supabase schema и synthetic demo data
+````text
+Ты работаешь в проекте AIForecast, branch feature/db-supabase, worktree AIForecast-db-supabase.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй PROJECT_PLAN.md.
+- Стек: Next.js App Router, React, TypeScript, Tailwind CSS, Recharts, Supabase, OpenRouter, Vercel.
+- Backend будет только через Next.js Route Handlers внутри app/api/.
+- Supabase используем только cloud.
+- Локальный Supabase через Docker не используем.
+- Demo data должны храниться в Supabase, а не в TypeScript-коде.
+- Сейчас выполняется только Этап 2: Supabase schema и demo data.
+
+Разрешено менять только:
+- supabase/migrations/*
+- supabase/seed.sql
+- lib/supabase/*
+- types/inventory.ts
+- .env.example только если там явно не хватает переменной из PROJECT_PLAN.md
+
+Запрещено менять:
+- app/page.tsx
+- app/layout.tsx
+- app/login/page.tsx
+- app/sku/*
+- app/methodology/*
+- components/*
+- app/api/auth/*
+- app/api/ai/*
+- lib/auth/*
+- lib/ai/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- package.json, если нет крайней необходимости
+- package-lock.json, если package.json не менялся
+
+Задача 1. Создай migration:
+Файл:
+supabase/migrations/001_init_schema.sql
+
+В migration создай таблицы:
+
+1. app_users
+Поля:
+- id uuid primary key default gen_random_uuid()
+- username text unique not null
+- password_hash text not null
+- display_name text
+- created_at timestamptz default now()
+
+2. sku_items
+Поля:
+- id uuid primary key default gen_random_uuid()
+- name text not null
+- dosage_form text not null
+- category text not null
+- storage_condition text not null
+- shelf_life_days int not null
+- current_stock numeric not null
+- unit text not null
+- unit_cost numeric not null
+- order_cost numeric not null
+- holding_cost_rate numeric not null
+- lead_time_days int not null
+- service_level numeric not null
+- supplier text not null
+- created_at timestamptz default now()
+
+3. inventory_lots
+Поля:
+- id uuid primary key default gen_random_uuid()
+- sku_id uuid not null references sku_items(id) on delete cascade
+- lot_number text not null
+- quantity numeric not null
+- received_at date not null
+- expires_at date not null
+- created_at timestamptz default now()
+
+4. inventory_movements
+Поля:
+- id uuid primary key default gen_random_uuid()
+- sku_id uuid not null references sku_items(id) on delete cascade
+- period_month date not null
+- inbound_qty numeric not null
+- outbound_qty numeric not null
+- writeoff_qty numeric not null
+- ending_stock numeric not null
+- anomaly_flag boolean default false
+- anomaly_note text
+- created_at timestamptz default now()
+
+5. ai_forecasts
+Поля:
+- id uuid primary key default gen_random_uuid()
+- sku_id uuid not null references sku_items(id) on delete cascade
+- model text not null
+- input_hash text not null
+- forecast_1m numeric not null
+- forecast_3m numeric not null
+- forecast_6m numeric not null
+- rop numeric not null
+- eoq numeric not null
+- stockout_risk text not null
+- overstock_risk text not null
+- expiry_risk text not null
+- confidence numeric
+- analysis jsonb not null
+- raw_response jsonb
+- created_at timestamptz default now()
+
+6. ai_forecast_runs
+Поля:
+- id uuid primary key default gen_random_uuid()
+- sku_id uuid references sku_items(id) on delete cascade
+- status text not null
+- model text not null
+- input_hash text
+- error_message text
+- created_at timestamptz default now()
+- finished_at timestamptz
+
+Требования к migration:
+- Используй public schema.
+- Используй create table if not exists.
+- Добавь разумные check constraints:
+  - quantities >= 0
+  - costs >= 0
+  - shelf_life_days > 0
+  - lead_time_days > 0
+  - service_level between 0 and 1
+  - risk values in ('low', 'medium', 'high', 'critical')
+  - confidence between 0 and 1
+- Добавь unique constraint для inventory_movements на (sku_id, period_month).
+- Добавь индексы:
+  - inventory_lots(sku_id)
+  - inventory_lots(expires_at)
+  - inventory_movements(sku_id, period_month)
+  - ai_forecasts(sku_id, created_at desc)
+  - ai_forecast_runs(sku_id, created_at desc)
+- Включи RLS для всех таблиц, но не создавай public policies. Мы будем читать данные только server-side через service role key.
+- Не добавляй Supabase Auth.
+- Не добавляй ORM.
+- Не добавляй локальный Supabase config.
+- Не добавляй Docker.
+
+Задача 2. Создай seed:
+Файл:
+supabase/seed.sql
+
+Seed должен быть повторно запускаемым.
+В начале seed очисти таблицы в безопасном порядке:
+- ai_forecast_runs
+- ai_forecasts
+- inventory_movements
+- inventory_lots
+- sku_items
+- app_users
+
+Добавь demo user:
+- username: demo
+- password для демонстрации: demo12345
+- в таблицу сохраняй только bcrypt hash, не plain password
+- display_name: Demo User
+
+Сгенерируй bcrypt hash локально через bcryptjs и вставь статический hash в seed.sql.
+
+Добавь 20 SKU для фармацевтической компании.
+Каждый SKU должен иметь реалистичные значения:
+- препарат
+- форма выпуска
+- категория
+- условия хранения
+- shelf_life_days
+- current_stock
+- unit
+- unit_cost
+- order_cost
+- holding_cost_rate
+- lead_time_days
+- service_level
+- supplier
+
+Обязательные demo-сценарии:
+1. Быстро оборачиваемый SKU с риском дефицита.
+2. Медленно оборачиваемый SKU с риском затоваривания.
+3. SKU с зимней сезонностью.
+4. SKU с летним сезонным спросом.
+5. SKU с аномальным списанием.
+6. Дорогой SKU класса A.
+7. SKU класса C, занимающий складское место.
+8. SKU с коротким остаточным сроком годности.
+9. SKU с длинным lead time поставщика.
+10. SKU, у которого факт резко разошёлся с будущим forecast-контекстом.
+
+Добавь inventory_lots:
+- 2–4 партии на ключевых SKU
+- lot_number
+- quantity
+- received_at
+- expires_at
+- обязательно должны быть партии:
+  - с близким сроком годности
+  - с нормальным сроком годности
+  - с большим остаточным сроком
+
+Добавь inventory_movements:
+- 18 месяцев истории
+- период: с 2024-10-01 по 2026-03-01 включительно
+- для каждого SKU должен быть один row на каждый месяц
+- inbound_qty, outbound_qty, writeoff_qty, ending_stock
+- для сезонных SKU сделай понятную сезонность
+- для 2–3 SKU добавь anomaly_flag = true и anomaly_note
+- данные должны выглядеть реалистично и разнообразно
+
+Важно:
+- Не добавляй fake ai_forecasts на этом этапе.
+- Таблица ai_forecasts должна остаться пустой: реальные записи появятся после OpenRouter batch generation на этапе AI.
+- Не добавляй demo data в TypeScript.
+- Не добавляй JSON-файлы с demo data.
+
+Задача 3. Создай server-side Supabase client:
+Файл:
+lib/supabase/server.ts
+
+Требования:
+- импортируй createClient из @supabase/supabase-js
+- экспортируй функцию createSupabaseAdminClient()
+- используй process.env.NEXT_PUBLIC_SUPABASE_URL
+- используй process.env.SUPABASE_SERVICE_ROLE_KEY
+- если env отсутствуют, бросай понятную ошибку
+- не создавай client на top-level, чтобы build не падал без env
+- не используй service role key в клиентских компонентах
+- добавь комментарий, что этот helper только для server-side Route Handlers
+
+Задача 4. Проверь types/inventory.ts:
+- Убедись, что типы согласованы с SQL schema.
+- Не ломай уже существующие типы.
+- Добавь недостающие типы только если нужно.
+
+Задача 5. Проверка качества:
+- Запусти npm run lint.
+- Запусти npm run build.
+- Покажи список созданных и изменённых файлов.
+- Покажи git diff --stat.
+- Убедись, что нет секретов и нет .env.local в git.
+
+Acceptance criteria:
+- migration и seed можно выполнить в Supabase SQL Editor.
+- После seed должно быть:
+  - 1 app user
+  - 20 sku_items
+  - минимум 40 inventory_lots
+  - ровно 360 inventory_movements
+  - 0 ai_forecasts
+- npm run lint проходит.
+- npm run build проходит.
+````

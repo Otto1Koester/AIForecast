@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useState, type ReactNode } from "react";
 
 import { ChartContainer } from "@/components/charts/ChartContainer";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -10,10 +12,7 @@ import type {
 } from "@/types/api";
 
 import { TREND_LABELS } from "./labels";
-import {
-  formatConfidence,
-  formatStockWithUnit,
-} from "./formatters";
+import { formatConfidence, formatStockWithUnit } from "./formatters";
 
 type SkuForecastPanelProps = {
   points: SkuForecastVsFactPoint[];
@@ -21,11 +20,46 @@ type SkuForecastPanelProps = {
   unit: string;
 };
 
+type ForecastHorizon = 1 | 3 | 6;
+
+const HORIZON_OPTIONS: ReadonlyArray<{ value: ForecastHorizon; label: string }> = [
+  { value: 1, label: "1 месяц" },
+  { value: 3, label: "3 месяца" },
+  { value: 6, label: "6 месяцев" },
+];
+
+const HORIZON_TITLES: Record<ForecastHorizon, string> = {
+  1: "Прогноз на 1 месяц",
+  3: "Прогноз на 3 месяца",
+  6: "Прогноз на 6 месяцев",
+};
+
+const HORIZON_DESCRIPTIONS: Record<ForecastHorizon, string> = {
+  1: "Оперативный горизонт — ближайший спрос.",
+  3: "Тактический горизонт планирования.",
+  6: "Долгосрочный взгляд на потребность.",
+};
+
+function getDemandForHorizon(
+  forecast: SkuLatestAiForecast["analysis"]["forecast"],
+  horizon: ForecastHorizon,
+): number {
+  switch (horizon) {
+    case 1:
+      return forecast.oneMonthDemand;
+    case 3:
+      return forecast.threeMonthDemand;
+    case 6:
+      return forecast.sixMonthDemand;
+  }
+}
+
 export function SkuForecastPanel({
   points,
   latestAiForecast,
   unit,
 }: SkuForecastPanelProps): ReactNode {
+  const [horizon, setHorizon] = useState<ForecastHorizon>(3);
   const hasFact = points.some((p) => p.fact !== null);
   const hasForecast = points.some((p) => p.forecast !== null);
   const analysis = latestAiForecast?.analysis.forecast;
@@ -51,22 +85,24 @@ export function SkuForecastPanel({
       </ChartContainer>
 
       {analysis ? (
-        <div className="space-y-3">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <header className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                AI-прогноз
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Выберите горизонт — значение прогноза обновится без перезагрузки.
+              </p>
+            </div>
+            <HorizonSegmentedControl value={horizon} onChange={setHorizon} />
+          </header>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <KpiCard
-              title="Прогноз 1 месяц"
-              value={formatStockWithUnit(analysis.oneMonthDemand, unit)}
-              description="AI-прогноз ближайшего спроса"
-            />
-            <KpiCard
-              title="Прогноз 3 месяца"
-              value={formatStockWithUnit(analysis.threeMonthDemand, unit)}
-              description="Среднесрочный горизонт планирования"
-            />
-            <KpiCard
-              title="Прогноз 6 месяцев"
-              value={formatStockWithUnit(analysis.sixMonthDemand, unit)}
-              description="Долгосрочный взгляд на потребность"
+              title={HORIZON_TITLES[horizon]}
+              value={formatStockWithUnit(getDemandForHorizon(analysis, horizon), unit)}
+              description={HORIZON_DESCRIPTIONS[horizon]}
             />
             <KpiCard
               title="Уверенность модели"
@@ -85,13 +121,52 @@ export function SkuForecastPanel({
               }
             />
           </div>
-        </div>
+        </section>
       ) : (
         <EmptyState
           title="AI-прогноз ещё не рассчитан"
-          description="Нажмите «Пересчитать AI-прогноз», чтобы вызвать OpenRouter и сохранить прогноз в Supabase."
+          description="Нажмите «Пересчитать AI-прогноз», чтобы получить прогноз на 1, 3 и 6 месяцев."
         />
       )}
     </section>
+  );
+}
+
+function HorizonSegmentedControl({
+  value,
+  onChange,
+}: {
+  value: ForecastHorizon;
+  onChange: (next: ForecastHorizon) => void;
+}): ReactNode {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Горизонт прогноза"
+      className="inline-flex flex-wrap items-center rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <span className="px-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        Горизонт
+      </span>
+      {HORIZON_OPTIONS.map((option) => {
+        const isActive = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={isActive}
+            onClick={() => onChange(option.value)}
+            className={
+              isActive
+                ? "rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors dark:bg-zinc-100 dark:text-zinc-900"
+                : "rounded-md px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            }
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -3399,3 +3399,160 @@ Acceptance criteria:
 - Production code не изменён.
 - Production URL оставлен как placeholder, если деплоя ещё нет.
 ````
+
+## Prompt 40 — Переход к final polish после завершения всех feature-веток
+````text
+feature/ui-sku-detail, feature/ui-methodology и feature/docs завершены, все ветки смержены в feature/mvp, проект собирается, ошибок нет, можем переходить к следующему шагу
+````
+
+## Prompt 41 — Cursor: final polish и интеграционный smoke-test MVP
+````text
+Ты работаешь в проекте AIForecast, branch feature/final-polish.
+
+Контекст:
+- Все основные ветки уже merged в feature/mvp:
+  - data-api
+  - ai-engine
+  - ui-dashboard
+  - ui-sku-catalog
+  - ui-sku-detail
+  - ui-methodology
+  - docs
+- Сейчас выполняется только final polish / integration QA.
+- Главная задача — проверить связность приложения целиком и исправить только реальные интеграционные проблемы.
+- Не переписывай архитектуру.
+- Не добавляй новые крупные функции.
+- Не меняй Supabase schema без крайней необходимости.
+- Не меняй README/PROMPTS без отдельного решения, если там нет явной ошибки.
+
+Продуктовый flow, который должен работать:
+1. /login
+2. login demo / demo12345
+3. /
+4. /sku
+5. /sku/[id]
+6. POST /api/ai/forecast/[skuId] через кнопку "Пересчитать AI-прогноз"
+7. /methodology
+8. logout
+
+Обязательные требования:
+- Header авторизованной части содержит Dashboard, SKU, Methodology, Выйти.
+- /login без protected header.
+- Данные берутся из Supabase через Next.js API, не из TypeScript mock.
+- AI-прогноз реально вызывается через OpenRouter только по кнопке или batch endpoint.
+- UI не должен показывать fake AI forecast.
+- Если AI-прогноз отсутствует, UI честно показывает empty state.
+- Если AI-прогноз есть, dashboard/catalog/detail должны показывать AI-поля.
+- Service role key и OpenRouter key не должны попадать в клиентский код.
+- .env.local не должен быть tracked.
+- .claude/, временные debug-файлы и тестовые одноразовые скрипты не должны попасть в git.
+
+Разрешено менять:
+- интеграционные багфиксы в app/(protected)/*
+- интеграционные багфиксы в components/*
+- интеграционные багфиксы в app/api/*
+- интеграционные багфиксы в lib/*
+- небольшие исправления types/*
+- небольшие исправления README.md или PROMPTS.md только если они явно устарели после merge
+- удаление случайных временных файлов, если они tracked
+
+Запрещено:
+- не менять PROJECT_PLAN.md
+- не добавлять новые зависимости без крайней необходимости
+- не менять package.json/package-lock.json без объяснения
+- не добавлять mock data
+- не добавлять fake ai_forecasts
+- не отключать auth
+- не отключать lint/typecheck
+- не коммитить .env.local
+- не коммитить .claude/
+
+Задача 1. Проверка структуры и мусора.
+Проверь:
+- git status
+- git ls-files .env.local
+- git ls-files .claude
+- git ls-files | findstr /i "test debug temp"
+- нет ли случайного test-supabase.js, если он не нужен продукту
+- нет ли console.log с секретами или лишним debug
+
+Если найдёшь мусор:
+- удали только очевидные временные файлы;
+- не удаляй полезные SQL/scripts/docs без уверенности.
+
+Задача 2. Проверка build/lint/typecheck.
+Запусти:
+- npm run lint
+- npm run build
+
+Исправь ошибки, если есть.
+Если ошибок нет — ничего не меняй ради красоты.
+
+Задача 3. Проверка API через local dev.
+Запусти npm run dev.
+
+Проверь через PowerShell или браузер:
+1. POST /api/auth/login с demo / demo12345.
+2. GET /api/auth/me с cookie.
+3. GET /api/dashboard с cookie.
+4. GET /api/sku с cookie.
+5. GET /api/sku/[id] с cookie.
+6. POST /api/ai/forecast/[skuId] с body { "force": true }.
+7. Повтор POST без force или с force:false, если endpoint поддерживает, чтобы проверить cache.
+8. POST /api/auth/logout.
+9. GET /api/dashboard без cookie должен вернуть 401.
+
+Не выводи секреты в лог.
+
+Задача 4. Проверка UI flow.
+Проверь вручную в браузере:
+1. /login открывается без header.
+2. Неверный пароль показывает ошибку.
+3. demo / demo12345 логинит.
+4. / показывает dashboard без console errors.
+5. Header содержит Dashboard, SKU, Methodology, Выйти.
+6. Dashboard показывает KPI, AI status, ABC, coverage, forecast vs fact, top risks.
+7. /sku показывает каталог, фильтры, сортировку и переходы.
+8. /sku/[id] показывает паспорт SKU, партии, движение, графики, AI-блоки.
+9. Кнопка "Пересчитать AI-прогноз" вызывает AI endpoint, показывает loading/success/error и обновляет UI.
+10. /methodology открывается и выглядит как законченная страница.
+11. Выйти переводит на /login.
+12. После logout прямой заход на /sku возвращает на /login.
+
+Задача 5. Проверка responsive.
+Минимально проверь:
+- desktop ширина;
+- mobile ширина около 390px;
+- таблица SKU не ломает экран;
+- карточка SKU читаема;
+- dashboard не имеет горизонтального overflow.
+
+Задача 6. Проверка содержания README/PROMPTS.
+Проверь:
+- README содержит описание, архитектуру, стек, запуск, env variables, demo credentials, ограничения MVP, demo flow.
+- README не содержит реальных ключей.
+- PROMPTS.md существует и соответствует формату проекта.
+- Если README уже готов и не содержит ошибок — не переписывай.
+
+Задача 7. Demo readiness.
+Подготовь короткий список:
+- какие SKU лучше показать на демо;
+- у какого SKU уже есть AI forecast;
+- какой SKU можно использовать для кнопки "Пересчитать AI-прогноз";
+- есть ли смысл запустить batch forecast для 3–5 SKU перед деплоем.
+
+Если нужно запустить batch forecast:
+- сначала предложи команду/endpoint;
+- не запускай бесконтрольно на все SKU;
+- соблюдай AI_BATCH_LIMIT.
+
+После завершения покажи:
+- список найденных проблем;
+- что исправлено;
+- список изменённых файлов;
+- git diff --stat;
+- результаты npm run lint;
+- результаты npm run build;
+- результаты ручного smoke-test;
+- рекомендации перед деплоем.
+````

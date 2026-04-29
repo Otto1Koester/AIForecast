@@ -75,7 +75,7 @@ export function SkuRecalculateButton({
         message:
           error instanceof Error
             ? `Ошибка сети: ${error.message}`
-            : "Не удалось связаться с AI endpoint.",
+            : "Не удалось связаться с AI-эндпоинтом.",
       });
     }
   }

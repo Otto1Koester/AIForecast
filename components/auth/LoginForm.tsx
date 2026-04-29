@@ -89,7 +89,7 @@ export function LoginForm() {
       </div>
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Demo: demo / demo12345
+        Демо-доступ: demo / demo12345
       </p>
 
       {error ? (

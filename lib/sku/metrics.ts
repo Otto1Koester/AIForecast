@@ -256,24 +256,24 @@ export function createSkuDetailMetrics(
   return [
     {
       id: "current-stock",
-      label: "Current stock",
+      label: "Текущий остаток",
       value: sku.currentStock,
       unit: sku.unit,
       tone: metrics.referenceStockoutRisk === "high" ? "warning" : "neutral",
     },
     {
       id: "inventory-value",
-      label: "Inventory value",
+      label: "Стоимость запасов",
       value: metrics.inventoryValue,
       unit: "USD",
       tone: "neutral",
     },
     {
       id: "days-coverage",
-      label: "Days coverage",
-      value: metrics.daysCoverage ?? "n/a",
-      unit: metrics.daysCoverage === null ? undefined : "days",
-      description: "Reference metric based on historical outbound movements.",
+      label: "Дни покрытия",
+      value: metrics.daysCoverage ?? "н/д",
+      unit: metrics.daysCoverage === null ? undefined : "дн.",
+      description: "Справочная метрика на основе исторического расхода.",
       tone:
         metrics.referenceStockoutRisk === "critical"
           ? "danger"
@@ -283,10 +283,11 @@ export function createSkuDetailMetrics(
     },
     {
       id: "expiry-risk",
-      label: "Expiry risk",
+      label: "Риск срока годности",
       value: metrics.quantityAtRisk90Days,
       unit: sku.unit,
-      description: "Quantity in lots expiring within 90 days.",
+      description:
+        "Количество в партиях со сроком годности в ближайшие 90 дней.",
       tone:
         metrics.referenceExpiryRisk === "critical"
           ? "danger"

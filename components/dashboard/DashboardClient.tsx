@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
+import {
+  DEFAULT_FORECAST_HORIZON,
+  type ForecastHorizon,
+} from "@/lib/utils/forecast-horizon";
 import type { DashboardResponse } from "@/types/api";
 
 import { DashboardAbcPanel } from "./DashboardAbcPanel";
@@ -33,7 +37,7 @@ async function loadDashboard(signal: AbortSignal): Promise<FetchState> {
       return {
         status: "error",
         kind: "unauthorized",
-        message: "Сессия истекла. Войдите снова, чтобы увидеть dashboard.",
+        message: "Сессия истекла. Войдите снова, чтобы увидеть главную.",
       };
     }
 
@@ -42,7 +46,7 @@ async function loadDashboard(signal: AbortSignal): Promise<FetchState> {
         status: "error",
         kind: "not-ready",
         message:
-          "Dashboard API ещё не подключён. Этот экран автоматически оживёт после деплоя /api/dashboard.",
+          "API главной ещё не подключён. Этот экран автоматически оживёт после деплоя /api/dashboard.",
       };
     }
 
@@ -74,6 +78,9 @@ async function loadDashboard(signal: AbortSignal): Promise<FetchState> {
 export function DashboardClient() {
   const [state, setState] = useState<FetchState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [planningHorizon, setPlanningHorizon] = useState<ForecastHorizon>(
+    DEFAULT_FORECAST_HORIZON,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -103,10 +110,10 @@ export function DashboardClient() {
   if (state.status === "error") {
     const title =
       state.kind === "not-ready"
-        ? "Dashboard API ещё не подключён"
+        ? "API главной ещё не подключён"
         : state.kind === "unauthorized"
           ? "Нужна повторная авторизация"
-          : "Не удалось загрузить dashboard";
+          : "Не удалось загрузить главную";
 
     return (
       <div className="space-y-6">
@@ -149,7 +156,11 @@ export function DashboardClient() {
         <DashboardCoveragePanel items={data.coverage} />
       </div>
 
-      <DashboardForecastPanel points={data.forecastVsFact} />
+      <DashboardForecastPanel
+        points={data.forecastVsFact}
+        horizon={planningHorizon}
+        onHorizonChange={setPlanningHorizon}
+      />
 
       <DashboardTopRisks items={data.topRiskSkus} />
     </div>

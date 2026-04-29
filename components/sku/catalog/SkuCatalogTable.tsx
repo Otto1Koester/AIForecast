@@ -1,9 +1,12 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
+"use client";
 
+import { useRouter } from "next/navigation";
+import type { KeyboardEvent, ReactNode } from "react";
+
+import { AbcBadge } from "@/components/ui/AbcBadge";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import type { RecommendationSummary, SkuListItem } from "@/types/api";
-import type { AbcClass, StorageCondition } from "@/types/inventory";
+import type { StorageCondition } from "@/types/inventory";
 
 import {
   ACTION_LABELS,
@@ -24,25 +27,6 @@ const headerCellClass =
 
 const bodyCellClass =
   "px-3 py-3 align-top text-sm text-zinc-700 dark:text-zinc-200";
-
-const abcStyles: Record<AbcClass, string> = {
-  A: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60",
-  B: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60",
-  C: "bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700",
-};
-
-function AbcBadge({ value }: { value: AbcClass | null }): ReactNode {
-  if (!value) {
-    return <span className="text-zinc-400 dark:text-zinc-500">—</span>;
-  }
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${abcStyles[value]}`}
-    >
-      {value}
-    </span>
-  );
-}
 
 function RiskCell({
   level,
@@ -102,9 +86,25 @@ function RecommendationCell({
 }
 
 export function SkuCatalogTable({ items }: SkuCatalogTableProps): ReactNode {
+  const router = useRouter();
+
+  function navigate(skuId: string) {
+    router.push(`/sku/${skuId}`);
+  }
+
+  function handleKeyDown(
+    event: KeyboardEvent<HTMLTableRowElement>,
+    skuId: string,
+  ) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      navigate(skuId);
+    }
+  }
+
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <table className="min-w-[1200px] w-full border-collapse text-left">
+      <table className="min-w-[1100px] w-full border-collapse text-left">
         <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/40">
           <tr>
             <th scope="col" className={headerCellClass}>
@@ -137,24 +137,23 @@ export function SkuCatalogTable({ items }: SkuCatalogTableProps): ReactNode {
             <th scope="col" className={headerCellClass}>
               AI-рекомендация
             </th>
-            <th scope="col" className={`${headerCellClass} text-right`}>
-              Действие
-            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {items.map((item) => (
             <tr
               key={item.id}
-              className="transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
+              role="link"
+              tabIndex={0}
+              onClick={() => navigate(item.id)}
+              onKeyDown={(event) => handleKeyDown(event, item.id)}
+              aria-label={`Открыть карточку ${item.name}`}
+              className="cursor-pointer transition-colors hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-900/40"
             >
               <td className={bodyCellClass}>
-                <Link
-                  href={`/sku/${item.id}`}
-                  className="font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50"
-                >
+                <span className="font-medium text-zinc-900 dark:text-zinc-50">
                   {item.name}
-                </Link>
+                </span>
               </td>
               <td className={bodyCellClass}>
                 <p>{item.dosageForm}</p>
@@ -205,20 +204,12 @@ export function SkuCatalogTable({ items }: SkuCatalogTableProps): ReactNode {
               <td className={bodyCellClass}>
                 <div className="flex flex-wrap gap-1.5">
                   <RiskCell level={item.stockoutRisk} label="Дефицит" />
-                  <RiskCell level={item.overstockRisk} label="Затоварка" />
-                  <RiskCell level={item.expiryRisk} label="Срок" />
+                  <RiskCell level={item.overstockRisk} label="Затоваривание" />
+                  <RiskCell level={item.expiryRisk} label="Срок годности" />
                 </div>
               </td>
               <td className={`${bodyCellClass} max-w-[260px]`}>
                 <RecommendationCell value={item.primaryRecommendation} />
-              </td>
-              <td className={`${bodyCellClass} text-right`}>
-                <Link
-                  href={`/sku/${item.id}`}
-                  className="inline-flex items-center rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  Открыть
-                </Link>
               </td>
             </tr>
           ))}

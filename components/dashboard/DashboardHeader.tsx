@@ -24,7 +24,7 @@ export function DashboardHeader({ generatedAt }: DashboardHeaderProps) {
           AIForecast · MVP
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Dashboard
+          Главная
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           AI-прогнозирование запасов лекарственных средств. Данные о SKU, партиях

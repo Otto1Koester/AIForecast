@@ -1,20 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AbcBadge } from "@/components/ui/AbcBadge";
+import { formatUnitRu } from "@/lib/utils/format";
 import type { SkuDetailHeader as SkuDetailHeaderDto } from "@/types/api";
-import type { AbcClass } from "@/types/inventory";
 
 import { STORAGE_LABELS } from "./labels";
 import { formatCurrency, formatPercent } from "./formatters";
 
 type SkuDetailHeaderProps = {
   header: SkuDetailHeaderDto;
-};
-
-const abcStyles: Record<AbcClass, string> = {
-  A: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60",
-  B: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60",
-  C: "bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700",
 };
 
 function PassportRow({
@@ -69,11 +64,7 @@ export function SkuDetailHeader({ header }: SkuDetailHeaderProps): ReactNode {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {header.abcClass ? (
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${abcStyles[header.abcClass]}`}
-            >
-              ABC: {header.abcClass}
-            </span>
+            <AbcBadge value={header.abcClass} prefix="ABC:" className="px-3 py-1" />
           ) : null}
           <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
             {STORAGE_LABELS[header.storageCondition] ?? header.storageCondition}
@@ -84,7 +75,7 @@ export function SkuDetailHeader({ header }: SkuDetailHeaderProps): ReactNode {
       <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <PassportRow label="Поставщик" value={header.supplier} />
         <PassportRow
-          label="Lead time"
+          label="Срок поставки"
           value={`${header.leadTimeDays} дн.`}
         />
         <PassportRow
@@ -97,7 +88,7 @@ export function SkuDetailHeader({ header }: SkuDetailHeaderProps): ReactNode {
         />
         <PassportRow
           label="Стоимость единицы"
-          value={`${formatCurrency(header.unitCost)} / ${header.unit}`}
+          value={`${formatCurrency(header.unitCost)} / ${formatUnitRu(header.unit)}`}
         />
         <PassportRow
           label="Стоимость заказа"
@@ -107,7 +98,7 @@ export function SkuDetailHeader({ header }: SkuDetailHeaderProps): ReactNode {
           label="Ставка хранения"
           value={formatPercent(header.holdingCostRate)}
         />
-        <PassportRow label="Единица измерения" value={header.unit} />
+        <PassportRow label="Единица измерения" value={formatUnitRu(header.unit)} />
       </dl>
     </section>
   );

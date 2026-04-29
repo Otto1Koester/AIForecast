@@ -83,7 +83,7 @@ export function SkuReorderPanel({
               hint="Резерв на колебания спроса и сроков"
             />
             <MetricRow
-              label="Спрос за lead time"
+              label="Спрос за срок поставки"
               value={formatInteger(reorder.leadTimeDemand)}
               hint="Ожидаемый расход за период поставки"
             />

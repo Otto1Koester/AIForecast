@@ -50,7 +50,7 @@ export function SkuAiMetadataPanel({
     <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <header className="space-y-1">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Технический AI metadata
+          Технические данные AI
         </h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Информация о последнем запуске модели для демонстрации и отладки.
@@ -69,9 +69,9 @@ export function SkuAiMetadataPanel({
           }
         />
         <MetaRow label="Модель" value={metadata.model ?? "—"} mono />
-        <MetaRow label="Forecast ID" value={metadata.forecastId ?? "—"} mono />
-        <MetaRow label="Run ID" value={metadata.runId ?? "—"} mono />
-        <MetaRow label="Input hash" value={metadata.inputHash ?? "—"} mono />
+        <MetaRow label="ID прогноза" value={metadata.forecastId ?? "—"} mono />
+        <MetaRow label="ID запуска" value={metadata.runId ?? "—"} mono />
+        <MetaRow label="Хеш входа" value={metadata.inputHash ?? "—"} mono />
         <MetaRow
           label="Создан"
           value={formatDateTime(metadata.createdAt)}

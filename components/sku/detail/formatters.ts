@@ -1,15 +1,11 @@
+import { formatRubFromUsd, formatUnitRu } from "@/lib/utils/format";
+
 const integerFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 0,
 });
 
 const decimalFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 1,
-});
-
-const currencyFormatter = new Intl.NumberFormat("ru-RU", {
-  style: "currency",
-  currency: "RUB",
-  maximumFractionDigits: 0,
 });
 
 const percentFormatter = new Intl.NumberFormat("ru-RU", {
@@ -48,7 +44,7 @@ export function formatDecimal(value: number | null | undefined): string {
 
 export function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return currencyFormatter.format(value);
+  return formatRubFromUsd(value);
 }
 
 export function formatPercent(value: number | null | undefined): string {
@@ -61,7 +57,7 @@ export function formatStockWithUnit(
   unit: string,
 ): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return `${integerFormatter.format(Math.round(value))} ${unit}`;
+  return `${integerFormatter.format(Math.round(value))} ${formatUnitRu(unit)}`;
 }
 
 export function formatDays(value: number | null | undefined): string {

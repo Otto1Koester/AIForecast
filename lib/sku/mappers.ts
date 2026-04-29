@@ -233,7 +233,7 @@ export function mapReorderInfo(
       eoq: null,
       safetyStock: null,
       leadTimeDemand: null,
-      explanation: "AI forecast is not generated yet.",
+      explanation: "AI-прогноз ещё не рассчитан.",
     };
   }
 
@@ -272,7 +272,7 @@ export function mapAiMetadata(
       inputHash: run?.input_hash ?? null,
       status: run?.status ?? "missing",
       errorMessage:
-        run?.error_message ?? "AI forecast is not generated yet.",
+        run?.error_message ?? "AI-прогноз ещё не рассчитан.",
       createdAt: run?.created_at ?? null,
       finishedAt: run?.finished_at ?? null,
     };

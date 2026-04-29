@@ -1,5 +1,6 @@
 import { KpiCard, type KpiTone } from "@/components/ui/KpiCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { formatRubFromUsd, formatUnitRu } from "@/lib/utils/format";
 import type { DashboardKpi } from "@/types/api";
 
 export type DashboardKpiGridProps = {
@@ -7,13 +8,18 @@ export type DashboardKpiGridProps = {
 };
 
 function formatValue(value: DashboardKpi["value"], unit?: string): string {
+  if (unit === "USD") {
+    return typeof value === "number" ? formatRubFromUsd(value) : String(value);
+  }
+
+  const displayUnit = unit ? formatUnitRu(unit) : "";
   if (typeof value === "number") {
     const formatted = new Intl.NumberFormat("ru-RU", {
       maximumFractionDigits: 1,
     }).format(value);
-    return unit ? `${formatted} ${unit}` : formatted;
+    return displayUnit ? `${formatted} ${displayUnit}` : formatted;
   }
-  return unit ? `${value} ${unit}` : value;
+  return displayUnit ? `${value} ${displayUnit}` : value;
 }
 
 export function DashboardKpiGrid({ kpis }: DashboardKpiGridProps) {

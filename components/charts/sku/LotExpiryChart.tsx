@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatUnitRu } from "@/lib/utils/format";
 import type { SkuLotDto } from "@/types/api";
 
 const numberFormatter = new Intl.NumberFormat("ru-RU", {
@@ -85,7 +86,7 @@ export function LotExpiryChart({ lots, unit }: LotExpiryChartProps) {
               ?.payload;
             const qty = payload?.quantity;
             return [
-              `${formatNumber(value)} дн. · ${formatNumber(qty)} ${unit}`,
+              `${formatNumber(value)} дн. · ${formatNumber(qty)} ${formatUnitRu(unit)}`,
               "До окончания",
             ];
           }}

@@ -71,7 +71,7 @@ export function SkuRiskPanel({ risks, unit }: SkuRiskPanelProps): ReactNode {
           <RiskBlock
             title="Дефицит"
             level={risks.stockout.level}
-            metricLabel="Дней до stockout"
+            metricLabel="Дней до дефицита"
             metricValue={
               risks.stockout.daysToStockout === null
                 ? "—"

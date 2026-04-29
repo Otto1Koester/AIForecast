@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
+import {
+  DEFAULT_FORECAST_HORIZON,
+  type ForecastHorizon,
+} from "@/lib/utils/forecast-horizon";
 import type { DashboardResponse } from "@/types/api";
 
 import { DashboardAbcPanel } from "./DashboardAbcPanel";
@@ -74,6 +78,9 @@ async function loadDashboard(signal: AbortSignal): Promise<FetchState> {
 export function DashboardClient() {
   const [state, setState] = useState<FetchState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [planningHorizon, setPlanningHorizon] = useState<ForecastHorizon>(
+    DEFAULT_FORECAST_HORIZON,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -149,7 +156,11 @@ export function DashboardClient() {
         <DashboardCoveragePanel items={data.coverage} />
       </div>
 
-      <DashboardForecastPanel points={data.forecastVsFact} />
+      <DashboardForecastPanel
+        points={data.forecastVsFact}
+        horizon={planningHorizon}
+        onHorizonChange={setPlanningHorizon}
+      />
 
       <DashboardTopRisks items={data.topRiskSkus} />
     </div>

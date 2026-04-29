@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 
 import { ChartContainer } from "@/components/charts/ChartContainer";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ForecastHorizonSelector } from "@/components/ui/ForecastHorizonSelector";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { SkuForecastVsFactChart } from "@/components/charts/sku/SkuForecastVsFactChart";
+import {
+  HORIZON_FORECAST_TITLES,
+  filterForecastPointsByHorizon,
+  hasForecastForHorizon,
+  type ForecastHorizon,
+} from "@/lib/utils/forecast-horizon";
 import type {
   SkuForecastVsFactPoint,
   SkuLatestAiForecast,
@@ -18,20 +25,8 @@ type SkuForecastPanelProps = {
   points: SkuForecastVsFactPoint[];
   latestAiForecast: SkuLatestAiForecast | null;
   unit: string;
-};
-
-type ForecastHorizon = 1 | 3 | 6;
-
-const HORIZON_OPTIONS: ReadonlyArray<{ value: ForecastHorizon; label: string }> = [
-  { value: 1, label: "1 месяц" },
-  { value: 3, label: "3 месяца" },
-  { value: 6, label: "6 месяцев" },
-];
-
-const HORIZON_TITLES: Record<ForecastHorizon, string> = {
-  1: "Прогноз на 1 месяц",
-  3: "Прогноз на 3 месяца",
-  6: "Прогноз на 6 месяцев",
+  horizon: ForecastHorizon;
+  onHorizonChange: (next: ForecastHorizon) => void;
 };
 
 const HORIZON_DESCRIPTIONS: Record<ForecastHorizon, string> = {
@@ -58,28 +53,39 @@ export function SkuForecastPanel({
   points,
   latestAiForecast,
   unit,
+  horizon,
+  onHorizonChange,
 }: SkuForecastPanelProps): ReactNode {
-  const [horizon, setHorizon] = useState<ForecastHorizon>(3);
-  const hasFact = points.some((p) => p.fact !== null);
-  const hasForecast = points.some((p) => p.forecast !== null);
   const analysis = latestAiForecast?.analysis.forecast;
+
+  const chartPoints = useMemo(
+    () => filterForecastPointsByHorizon(points, horizon),
+    [points, horizon],
+  );
+  const hasFact = chartPoints.some((p) => p.fact !== null);
+  const hasForecastPointForHorizon = hasForecastForHorizon(points, horizon);
+  const hasAnyForecast = points.some((p) => p.forecast !== null);
 
   return (
     <section className="space-y-4">
       <ChartContainer
         title="Прогноз и факт"
-        description="Сравнение фактического расхода с AI-прогнозом по месяцам."
+        description={
+          hasAnyForecast
+            ? `${HORIZON_FORECAST_TITLES[horizon]} — пунктирная точка прогноза смещается в зависимости от выбранного горизонта.`
+            : "Сравнение фактического расхода с AI-прогнозом по месяцам."
+        }
       >
-        {!hasFact && !hasForecast ? (
+        {!hasFact && !hasForecastPointForHorizon ? (
           <EmptyState
             title="Нет данных для сравнения"
             description="Появится, как только появится история движения и AI-прогноз."
           />
         ) : (
           <SkuForecastVsFactChart
-            points={points}
+            points={chartPoints}
             unit={unit}
-            hasForecast={hasForecast}
+            hasForecast={hasForecastPointForHorizon}
           />
         )}
       </ChartContainer>
@@ -92,15 +98,20 @@ export function SkuForecastPanel({
                 AI-прогноз
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Выберите горизонт — значение прогноза обновится без перезагрузки.
+                Выберите горизонт — значение прогноза и точка на графике
+                обновятся без перезагрузки.
               </p>
             </div>
-            <HorizonSegmentedControl value={horizon} onChange={setHorizon} />
+            <ForecastHorizonSelector
+              value={horizon}
+              onChange={onHorizonChange}
+              ariaLabel="Горизонт прогноза"
+            />
           </header>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <KpiCard
-              title={HORIZON_TITLES[horizon]}
+              title={HORIZON_FORECAST_TITLES[horizon]}
               value={formatStockWithUnit(getDemandForHorizon(analysis, horizon), unit)}
               description={HORIZON_DESCRIPTIONS[horizon]}
             />
@@ -129,44 +140,5 @@ export function SkuForecastPanel({
         />
       )}
     </section>
-  );
-}
-
-function HorizonSegmentedControl({
-  value,
-  onChange,
-}: {
-  value: ForecastHorizon;
-  onChange: (next: ForecastHorizon) => void;
-}): ReactNode {
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Горизонт прогноза"
-      className="inline-flex flex-wrap items-center rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-    >
-      <span className="px-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-        Горизонт
-      </span>
-      {HORIZON_OPTIONS.map((option) => {
-        const isActive = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={isActive}
-            onClick={() => onChange(option.value)}
-            className={
-              isActive
-                ? "rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors dark:bg-zinc-100 dark:text-zinc-900"
-                : "rounded-md px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-            }
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }

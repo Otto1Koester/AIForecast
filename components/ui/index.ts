@@ -7,6 +7,9 @@ export type { RiskBadgeProps } from "./RiskBadge";
 export { AbcBadge, ABC_CLASS_STYLES, ABC_CHART_COLORS } from "./AbcBadge";
 export type { AbcBadgeProps } from "./AbcBadge";
 
+export { ForecastHorizonSelector } from "./ForecastHorizonSelector";
+export type { ForecastHorizonSelectorProps } from "./ForecastHorizonSelector";
+
 export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
 

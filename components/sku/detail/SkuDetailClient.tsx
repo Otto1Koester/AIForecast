@@ -6,6 +6,10 @@ import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
+import {
+  DEFAULT_FORECAST_HORIZON,
+  type ForecastHorizon,
+} from "@/lib/utils/forecast-horizon";
 import type { ApiErrorResponse, SkuDetailResponse } from "@/types/api";
 
 import { SkuAiInsightsPanel } from "./SkuAiInsightsPanel";
@@ -99,6 +103,9 @@ export type SkuDetailClientProps = {
 export function SkuDetailClient({ skuId }: SkuDetailClientProps) {
   const [state, setState] = useState<FetchState>(INITIAL_STATE);
   const [reloadToken, setReloadToken] = useState(0);
+  const [forecastHorizon, setForecastHorizon] = useState<ForecastHorizon>(
+    DEFAULT_FORECAST_HORIZON,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -203,6 +210,8 @@ export function SkuDetailClient({ skuId }: SkuDetailClientProps) {
         points={data.forecastVsFact}
         latestAiForecast={ai}
         unit={unit}
+        horizon={forecastHorizon}
+        onHorizonChange={setForecastHorizon}
       />
 
       <SkuReorderPanel reorder={data.reorder} unit={unit} />

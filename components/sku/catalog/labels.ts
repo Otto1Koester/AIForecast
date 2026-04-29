@@ -1,4 +1,4 @@
-import { formatUnitRu } from "@/lib/utils/format";
+import { formatRubFromUsd, formatUnitRu } from "@/lib/utils/format";
 import type { AiRecommendationAction, AiRecommendationPriority } from "@/types/ai";
 import type { StorageCondition } from "@/types/inventory";
 import type { RiskLevel } from "@/types/api";
@@ -65,12 +65,6 @@ const decimalFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 1,
 });
 
-const currencyFormatter = new Intl.NumberFormat("ru-RU", {
-  style: "currency",
-  currency: "RUB",
-  maximumFractionDigits: 0,
-});
-
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "2-digit",
   month: "short",
@@ -95,7 +89,7 @@ export function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return "—";
   }
-  return currencyFormatter.format(value);
+  return formatRubFromUsd(value);
 }
 
 export function formatStockWithUnit(

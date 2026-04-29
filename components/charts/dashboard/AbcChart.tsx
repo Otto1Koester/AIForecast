@@ -10,6 +10,7 @@ import {
 } from "recharts";
 
 import { ABC_CHART_COLORS } from "@/components/ui/AbcBadge";
+import { formatRubFromUsd } from "@/lib/utils/format";
 import type { DashboardAbcItem } from "@/types/api";
 
 export type AbcChartProps = {
@@ -48,13 +49,10 @@ export function AbcChart({ items }: AbcChartProps) {
             const payload = (item as { payload?: { skuCount: number; share: number } })
               ?.payload;
             const numeric = typeof value === "number" ? value : Number(value);
-            const formatted = new Intl.NumberFormat("ru-RU", {
-              maximumFractionDigits: 0,
-            }).format(Number.isFinite(numeric) ? numeric : 0);
             const share = payload ? Math.round(payload.share * 100) : null;
             const sku = payload ? `${payload.skuCount} SKU` : "";
             return [
-              `${formatted} ₽${share != null ? ` · ${share}%` : ""} · ${sku}`,
+              `${formatRubFromUsd(numeric)}${share != null ? ` · ${share}%` : ""} · ${sku}`,
               "Стоимость запасов",
             ];
           }}

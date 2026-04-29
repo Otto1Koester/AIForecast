@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { KpiCard, type KpiTone } from "@/components/ui/KpiCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { formatUnitRu } from "@/lib/utils/format";
+import { formatRubFromUsd, formatUnitRu } from "@/lib/utils/format";
 import type { SkuDetailMetric } from "@/types/api";
 
 type SkuDetailMetricsProps = {
@@ -13,6 +13,10 @@ function formatValue(
   value: SkuDetailMetric["value"],
   unit: string | undefined,
 ): string {
+  if (unit === "USD") {
+    return typeof value === "number" ? formatRubFromUsd(value) : String(value);
+  }
+
   const displayUnit = unit ? formatUnitRu(unit) : "";
   if (typeof value === "number") {
     const formatted = new Intl.NumberFormat("ru-RU", {

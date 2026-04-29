@@ -381,6 +381,28 @@ export type SkuDetailResponse = {
 };
 
 // ---------------------------------------------------------------------------
+// SKU demo scenario DTOs
+// ---------------------------------------------------------------------------
+
+export type DemoScenario = "stockout" | "overstock" | "reset";
+
+export type DemoScenarioChangedMovement = {
+  id: string;
+  outboundQty: number;
+  endingStock: number;
+};
+
+export type DemoScenarioResponse = {
+  scenario: DemoScenario;
+  message: string;
+  sku: {
+    id: string;
+    currentStock: number;
+  };
+  changedMovements: DemoScenarioChangedMovement[];
+};
+
+// ---------------------------------------------------------------------------
 // AI action DTOs
 // ---------------------------------------------------------------------------
 

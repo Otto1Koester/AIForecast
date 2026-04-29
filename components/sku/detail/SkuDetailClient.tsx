@@ -14,6 +14,7 @@ import type { ApiErrorResponse, SkuDetailResponse } from "@/types/api";
 
 import { SkuAiInsightsPanel } from "./SkuAiInsightsPanel";
 import { SkuAiMetadataPanel } from "./SkuAiMetadataPanel";
+import { SkuDemoScenarioPanel } from "./SkuDemoScenarioPanel";
 import { SkuDetailHeader } from "./SkuDetailHeader";
 import { SkuDetailMetrics } from "./SkuDetailMetrics";
 import { SkuForecastPanel } from "./SkuForecastPanel";
@@ -122,7 +123,6 @@ export function SkuDetailClient({ skuId }: SkuDetailClientProps) {
   }, [skuId, reloadToken]);
 
   const refresh = useCallback(async () => {
-    setState({ status: "loading" });
     setReloadToken((token) => token + 1);
   }, []);
 
@@ -199,6 +199,8 @@ export function SkuDetailClient({ skuId }: SkuDetailClientProps) {
       <SkuDetailHeader header={data.header} />
 
       <SkuRecalculateButton skuId={skuId} onSuccess={refresh} />
+
+      <SkuDemoScenarioPanel skuId={skuId} onSuccess={refresh} />
 
       <SkuDetailMetrics metrics={data.metrics} />
 

@@ -18,7 +18,7 @@ AIForecast — MVP веб-сервиса для фармацевтической
 ## Ссылки
 
 - GitHub repository: https://github.com/Otto1Koester/AIForecast
-- Production URL: `TBD после Vercel deploy`
+- Production URL: https://aiforecast.vercel.app
 - Demo login:
   - username: `demo`
   - password: `demo12345`
@@ -220,7 +220,6 @@ select
 4. Выполнить deploy.
 5. Проверить `/login`, `/`, `/sku`, `/sku/[id]`, `/methodology`.
 6. Проверить AI recalculation на одном SKU.
-7. Заменить placeholder `TBD после Vercel deploy` в README на production URL.
 
 ## Команды качества
 

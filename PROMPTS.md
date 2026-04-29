@@ -2530,3 +2530,268 @@ Acceptance criteria:
 - npm run lint проходит.
 - npm run build проходит.
 ````
+
+## Prompt 34 — Переход к карточке SKU после Data API, AI engine, Dashboard и Catalog
+````text
+Все этапы, описанные в прикрепленном текстовом файле, завершены. Можем приступать к следующему шагу.
+````
+
+## Prompt 35 — Claude: UI SKU Detail с AI-пересчётом
+````text
+Ты работаешь в проекте AIForecast, branch feature/ui-sku-detail, worktree AIForecast-ui-sku-detail.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Уже merged в feature/mvp:
+  - Auth;
+  - Supabase schema/demo data;
+  - Data API;
+  - AI forecast engine;
+  - UI/API contracts;
+  - UI Dashboard;
+  - UI SKU Catalog.
+- Header уже содержит Dashboard, SKU, Methodology и Выйти. Header не менять.
+- /login остаётся отдельной страницей без protected header.
+- Сейчас выполняется только UI SKU Detail.
+- Backend/API/AI уже существуют. Не меняй их.
+- Экран должен читать реальные данные из GET /api/sku/[id].
+- Кнопка пересчёта должна вызывать POST /api/ai/forecast/[skuId].
+- Не создавай mock/fake SKU, fake AI forecast или локальные demo data в TypeScript.
+
+Главная цель:
+Собрать законченную карточку SKU на /sku/[id], которая показывает паспорт SKU, партии, историю движения, forecast vs fact, AI-прогноз 1/3/6 месяцев, сезонность, тренд, аномалии, ROP/EOQ, риски, рекомендации и технические AI metadata. Экран должен уметь пересчитать AI-прогноз через существующий endpoint и обновить данные.
+
+Разрешено менять:
+- app/(protected)/sku/[id]/page.tsx
+- components/sku/detail/*
+- components/charts/sku/*
+
+Можно использовать, но не менять без отдельного разрешения:
+- components/ui/*
+- components/charts/ChartContainer.tsx
+- types/api.ts
+- types/ai.ts
+- types/inventory.ts
+
+Запрещено менять:
+- app/(protected)/layout.tsx
+- app/(protected)/page.tsx
+- app/(protected)/sku/page.tsx
+- app/(protected)/methodology/page.tsx
+- app/login/page.tsx
+- app/api/*
+- lib/*
+- supabase/*
+- components/dashboard/*
+- components/sku/catalog/*
+- components/charts/dashboard/*
+- components/auth/*
+- components/layout/*
+- app/globals.css
+- package.json
+- package-lock.json
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- .env.example
+- .env.local нельзя коммитить
+- .claude/ нельзя коммитить
+
+Задача 1. Изучи существующие контракты и UI:
+1. Прочитай types/api.ts.
+2. Прочитай types/ai.ts.
+3. Прочитай types/inventory.ts.
+4. Прочитай components/ui/*.
+5. Прочитай components/charts/ChartContainer.tsx.
+6. Прочитай app/(protected)/sku/[id]/page.tsx.
+7. Посмотри стиль уже готовых dashboard и catalog компонентов, но не меняй их.
+
+Задача 2. Обнови app/(protected)/sku/[id]/page.tsx.
+- Это может быть server component-wrapper.
+- Для Next.js 16 учитывай, что params может быть Promise<{ id: string }>, если текущий проект уже использует такой стиль.
+- Страница должна передавать skuId в client component.
+- Не делай Supabase/OpenRouter вызовов прямо в page.tsx.
+- Основной fetch должен быть внутри client component через наши API endpoints.
+
+Задача 3. Создай components/sku/detail/SkuDetailClient.tsx.
+Компонент должен:
+- быть client component;
+- принимать skuId: string;
+- делать fetch(`/api/sku/${skuId}`);
+- поддерживать состояния:
+  - loading;
+  - 401 unauthorized / session expired;
+  - 404 SKU not found;
+  - generic error;
+  - empty/no data;
+  - success;
+- использовать LoadingState, ErrorState, EmptyState из components/ui;
+- не обращаться напрямую к Supabase;
+- не обращаться напрямую к OpenRouter;
+- не использовать fake data.
+
+После успешной загрузки должен показывать блоки:
+1. Header карточки SKU.
+2. KPI/metrics.
+3. Партии и сроки годности.
+4. История движения.
+5. Forecast vs fact.
+6. AI forecast 1/3/6.
+7. ROP/EOQ.
+8. Риски.
+9. Рекомендации.
+10. Аномалии/сезонность/тренд.
+11. Технический AI metadata.
+12. Кнопка "Пересчитать AI-прогноз".
+
+Задача 4. Создай UI-компоненты внутри components/sku/detail/.
+Предлагаемая структура:
+- SkuDetailHeader.tsx
+- SkuDetailMetrics.tsx
+- SkuLotsPanel.tsx
+- SkuMovementsPanel.tsx
+- SkuForecastPanel.tsx
+- SkuReorderPanel.tsx
+- SkuRiskPanel.tsx
+- SkuRecommendationsPanel.tsx
+- SkuAiInsightsPanel.tsx
+- SkuAiMetadataPanel.tsx
+- SkuRecalculateButton.tsx
+- labels.ts
+- formatters.ts
+
+Можно изменить имена, если структура останется понятной.
+
+Требования к UI:
+- русский текст;
+- аккуратная бизнес-подача;
+- без перегруза;
+- хорошие empty states, если AI forecast ещё не рассчитан;
+- показать, что отсутствие AI-прогноза — это нормальное состояние до пересчёта;
+- не скрывать кнопку пересчёта, если AI отсутствует;
+- использовать RiskBadge для рисков;
+- использовать KpiCard для ключевых метрик, если удобно;
+- использовать ChartContainer для графиков.
+
+Задача 5. Создай графики внутри components/charts/sku/.
+Нужные графики:
+1. MovementHistoryChart.tsx
+   - Recharts;
+   - показывает inbound/outbound/writeoff/ending stock по месяцам;
+   - должен быть читаемым на карточке SKU.
+
+2. SkuForecastVsFactChart.tsx
+   - Recharts;
+   - показывает fact/outbound и forecast, если forecast есть;
+   - если AI forecast отсутствует, график должен показать только факт или корректный empty state;
+   - не рисуй fake forecast.
+
+3. LotExpiryChart.tsx или LotExpiryTimeline.tsx
+   - визуализация партий по сроку годности;
+   - можно сделать не график, а аккуратную timeline/table внутри detail components, если так быстрее и надёжнее.
+
+Требования:
+- не добавляй новые библиотеки;
+- использовать уже установленный Recharts;
+- избегать сложных кастомных tooltip types, если они ломают build;
+- не задавай чрезмерно сложную типизацию tooltip formatter;
+- если TypeScript конфликтует с Recharts formatter, используй более общий тип value: unknown и безопасное форматирование.
+
+Задача 6. Реализуй кнопку пересчёта AI.
+Компонент:
+- components/sku/detail/SkuRecalculateButton.tsx
+
+Поведение:
+- POST `/api/ai/forecast/${skuId}`;
+- body: { "force": true };
+- после успеха обновить detail через повторный fetch;
+- показать loading state на кнопке;
+- показать успех/ошибку в UI;
+- если API возвращает 401, показать сообщение о сессии;
+- если OpenRouter вернул ошибку, показать понятное русское сообщение;
+- не делать автоматический пересчёт при открытии страницы;
+- не запускать batch endpoint.
+
+Важно:
+- Не вызывай AI на каждый render.
+- Только по нажатию кнопки.
+- После успеха новый forecast должен появиться в UI.
+
+Задача 7. Отобрази AI-блоки.
+Если latestAiForecast есть:
+- forecast 1/3/6 месяцев;
+- confidence;
+- trend;
+- seasonality;
+- anomalies;
+- executiveSummary;
+- ROP;
+- EOQ;
+- safetyStock;
+- leadTimeDemand;
+- explanation;
+- stockout/overstock/expiry risks;
+- recommendations;
+- metadata: model, createdAt, inputHash/status, если есть.
+
+Если latestAiForecast нет:
+- показать EmptyState:
+  "AI-прогноз ещё не рассчитан"
+  "Нажмите «Пересчитать AI-прогноз», чтобы вызвать OpenRouter и сохранить прогноз в Supabase."
+- ROP/EOQ не придумывать;
+- forecast не придумывать;
+- рекомендации не придумывать.
+
+Задача 8. Ручная навигация.
+- В header ничего не меняй.
+- Добавь в карточке ссылку "Назад к каталогу" на /sku.
+- Можно добавить breadcrumb "SKU / Название препарата".
+- Каждая строка catalog уже ведёт на /sku/[id], не меняй catalog.
+
+Задача 9. Проверка качества.
+Запусти:
+- npm run lint
+- npm run build
+
+Запусти:
+- npm run dev
+
+Ручной smoke:
+1. Открыть /login.
+2. Войти demo / demo12345.
+3. Открыть /sku.
+4. Перейти в любой SKU.
+5. Убедиться, что карточка загрузилась.
+6. Проверить блоки: паспорт, партии, история движения, графики, AI-блоки.
+7. Если SKU без AI-прогноза — увидеть empty state и кнопку пересчёта.
+8. Нажать "Пересчитать AI-прогноз".
+9. Убедиться, что кнопка показывает loading.
+10. Убедиться, что после успеха UI обновился и появились forecast/ROP/EOQ/recommendations.
+11. Открыть SKU с уже рассчитанным AI-прогнозом — блоки должны быть заполнены сразу.
+12. Проверить, что в console нет ошибок.
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат npm run lint;
+- результат npm run build;
+- что именно проверено вручную;
+- подтверждение, что .env.local не попал в git;
+- подтверждение, что .claude/ не попал в git;
+- подтверждение, что запрещённые файлы не изменялись.
+
+Acceptance criteria:
+- /sku/[id] показывает реальную карточку SKU из GET /api/sku/[id].
+- Есть история движения и партии.
+- Есть forecast vs fact.
+- Есть AI forecast 1/3/6, если он рассчитан.
+- Если AI forecast отсутствует, UI честно показывает empty state.
+- Есть ROP/EOQ и explanation из AI, если forecast рассчитан.
+- Есть риски и рекомендации из AI.
+- Есть кнопка "Пересчитать AI-прогноз", которая вызывает существующий AI endpoint и обновляет UI.
+- Нет fake AI data.
+- Нет изменений API, lib, Supabase, Auth, shared UI, Dashboard, Catalog, Methodology.
+- npm run lint проходит.
+- npm run build проходит.
+````

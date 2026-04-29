@@ -12,7 +12,7 @@ export default function MethodologyPage() {
       </header>
 
       <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-        Этап 1: каркас. Содержание страницы наполним на этапе документации.
+        Описание методологии будет дополнено на следующих этапах.
       </div>
     </section>
   );

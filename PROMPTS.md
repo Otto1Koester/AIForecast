@@ -1205,3 +1205,328 @@ Acceptance criteria:
 - Header с Dashboard не изменён.
 - Реальная Data API и AI engine не реализованы на этом этапе.
 ````
+
+## Prompt 24 — Завершение UI/API contracts и переход к Data API
+````text
+feature/ui-contracts завершена, ошибок нет, все смержено, ветки обновлены. Можем переходить к следующему этапу. Давай каждый запуск параллельной задачи делать отдельным шагом.
+````
+
+## Prompt 25 — Codex: Data API для dashboard, SKU catalog и SKU detail
+````text
+Ты работаешь в проекте AIForecast, branch feature/data-api, worktree AIForecast-data-api.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Уже завершены и merged в feature/mvp:
+  - Этап 1: Next.js app;
+  - Этап 2: Supabase schema и demo data;
+  - Этап 3: Auth;
+  - Этап 4A: UI/API contracts и shared UI components.
+- Header авторизованной части уже содержит Dashboard, SKU, Methodology и кнопку Выйти. Не меняй header.
+- /login остаётся отдельной страницей без protected header.
+- Сейчас выполняется только Этап 4B: Data API.
+- Backend должен быть только через Next.js Route Handlers внутри app/api/.
+- Supabase используем только server-side через service role helper.
+- Supabase service role key не должен попадать в клиентский код.
+- Локальный Supabase через Docker не используем.
+- AI engine ещё не реализован, поэтому ai_forecasts может быть пустой таблицей.
+- На этом этапе нельзя создавать fake ai_forecasts и нельзя вызывать OpenRouter.
+
+Главная цель:
+Реализовать read-only Data API для dashboard, SKU catalog и SKU detail, которое читает реальные demo data из Supabase, возвращает данные в DTO-формате из types/api.ts и корректно работает даже если AI-прогнозы ещё не сгенерированы.
+
+Разрешено менять:
+- app/api/dashboard/route.ts
+- app/api/sku/route.ts
+- app/api/sku/[id]/route.ts
+- lib/dashboard/*
+- lib/sku/*
+- lib/utils/*
+- types/api.ts только если обнаружится критичная несовместимость DTO, но сначала постарайся обойтись без изменений
+- types/inventory.ts только если нужно безопасное расширение типов под фактическую SQL schema
+
+Можно читать, но не менять без необходимости:
+- lib/auth/*
+- lib/supabase/server.ts
+- types/ai.ts
+- supabase/migrations/001_init_schema.sql
+- supabase/seed.sql
+
+Запрещено менять:
+- app/(protected)/page.tsx
+- app/(protected)/sku/page.tsx
+- app/(protected)/sku/[id]/page.tsx
+- app/(protected)/methodology/page.tsx
+- app/(protected)/layout.tsx
+- app/login/page.tsx
+- components/*
+- app/api/auth/*
+- app/api/ai/*
+- lib/auth/*, кроме крайней необходимости и только если без этого невозможно проверить API session
+- lib/ai/*
+- supabase/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- package.json
+- package-lock.json
+- .env.example
+- .env.local нельзя коммитить
+
+Задача 1. Изучи существующие контракты и schema:
+1. Прочитай types/api.ts.
+2. Прочитай types/inventory.ts.
+3. Прочитай types/ai.ts.
+4. Прочитай Supabase schema в supabase/migrations/001_init_schema.sql.
+5. Прочитай seed.sql только чтобы понимать форму demo data.
+6. Прочитай lib/supabase/server.ts.
+7. Прочитай lib/auth/current-user.ts или аналогичный helper, чтобы понять, как проверить session в API без redirect.
+
+Важно:
+- Не дублируй DTO, которые уже есть в types/api.ts.
+- Не меняй публичные DTO без крайней необходимости.
+- Все API responses должны быть совместимы с types/api.ts.
+- Все snake_case поля из БД должны преобразовываться в camelCase DTO для UI.
+
+Задача 2. Реализуй auth guard для Data API:
+- Все три Data API endpoint должны требовать авторизацию.
+- Если пользователь не авторизован, возвращай JSON 401:
+  {
+    "error": "Unauthorized"
+  }
+- Для API не делай redirect('/login').
+- Используй существующий non-redirecting current user helper, если он есть.
+- Если есть только helper с redirect, не используй его в Route Handlers. Найди существующую функцию, которая возвращает null при отсутствии session.
+- Не меняй auth flow и cookie logic.
+
+Задача 3. Создай lib/sku helpers.
+
+Создай файлы на своё усмотрение внутри lib/sku, например:
+- lib/sku/queries.ts
+- lib/sku/mappers.ts
+- lib/sku/metrics.ts
+
+Ожидаемые функции:
+1. Получить все SKU из sku_items.
+2. Получить партии inventory_lots для набора SKU.
+3. Получить движения inventory_movements для набора SKU.
+4. Получить latest ai_forecasts для набора SKU.
+5. Получить detail по одному SKU.
+6. Преобразовать DB rows в DTO.
+
+Требования:
+- Для набора из 20 SKU можно делать простые отдельные запросы и reduce в памяти. Не усложняй SQL.
+- Не добавляй ORM.
+- Не добавляй SQL views.
+- Не меняй Supabase schema.
+- Не используй client-side Supabase.
+- Обрабатывай ошибки Supabase и пробрасывай понятные Error messages на сервере.
+
+Задача 4. Расчёт простых reference metrics.
+Код НЕ должен строить отдельный deterministic AI forecast engine.
+
+Можно считать только вспомогательные метрики для dashboard/UI:
+- inventoryValue = currentStock * unitCost;
+- averageMonthlyOutbound на основе inventory_movements;
+- averageDailyOutbound = averageMonthlyOutbound / 30;
+- daysCoverage = currentStock / averageDailyOutbound, если averageDailyOutbound > 0, иначе null;
+- lot expiry proximity;
+- quantityAtRiskByExpiry для партий, которые истекают в ближайшие 90/180 дней;
+- ABC class по inventory value:
+  - отсортировать SKU по inventoryValue desc;
+  - cumulative share <= 80% => A;
+  - cumulative share <= 95% => B;
+  - остальное => C.
+
+Важно:
+- ROP, EOQ, forecast_1m, forecast_3m, forecast_6m, risks и recommendations брать из latest ai_forecasts, если они есть.
+- Если latest ai_forecasts нет, возвращать состояние "AI forecast is not generated yet" в совместимом с DTO виде.
+- Не подставлять fake ROP/EOQ.
+- Не создавать fake ai_forecasts.
+- Не вызывать OpenRouter.
+- Не реализовывать AI logic.
+
+Задача 5. Реализуй GET /api/sku.
+Файл:
+- app/api/sku/route.ts
+
+Endpoint:
+- должен вернуть SkuListResponse из types/api.ts.
+- читает sku_items, inventory_movements, inventory_lots, latest ai_forecasts.
+- возвращает список SKU с:
+  - id;
+  - name;
+  - dosageForm;
+  - category;
+  - storageCondition;
+  - shelfLifeDays;
+  - currentStock;
+  - unit;
+  - unitCost;
+  - inventoryValue;
+  - daysCoverage;
+  - abcClass;
+  - rop/eoq из latest ai_forecasts, если есть;
+  - risks из latest ai_forecasts, если есть;
+  - primaryRecommendation из latest ai_forecasts.analysis.recommendations[0], если есть;
+  - latestForecastCreatedAt, если есть.
+- meta должна включать total и полезные значения для фильтров, если это предусмотрено DTO.
+
+Query params можно поддержать минимально:
+- search
+- category
+- storageCondition
+- abcClass
+- risk
+- sortBy
+- sortDirection
+
+Если DTO уже предполагает filters/meta — используй их.
+Если проще и безопаснее вернуть все 20 SKU, фильтрацию можно оставить для UI, но query params не должны ломать endpoint.
+
+Задача 6. Реализуй GET /api/sku/[id].
+Файл:
+- app/api/sku/[id]/route.ts
+
+Endpoint:
+- должен вернуть SkuDetailResponse из types/api.ts.
+- Next.js 16 style: если params является Promise, используй await params.
+- Если SKU не найден, возвращай JSON 404:
+  {
+    "error": "SKU not found"
+  }
+- Должен вернуть:
+  - паспорт SKU;
+  - партии inventory_lots;
+  - историю inventory_movements за 18 месяцев;
+  - latest AI forecast, если есть;
+  - forecast vs fact points;
+  - ROP/EOQ из latest ai_forecasts, если есть;
+  - risks/recommendations из latest ai_forecasts.analysis, если есть;
+  - technical AI metadata: model, createdAt, inputHash, confidence, если есть.
+- Если latest ai_forecasts нет, endpoint должен всё равно вернуть SKU detail и явно показать, что AI-прогноз ещё не рассчитан.
+
+Задача 7. Создай lib/dashboard helpers.
+
+Создай файлы на своё усмотрение внутри lib/dashboard, например:
+- lib/dashboard/queries.ts
+- lib/dashboard/mappers.ts
+- lib/dashboard/metrics.ts
+
+Dashboard должен использовать те же базовые данные:
+- sku_items;
+- inventory_lots;
+- inventory_movements;
+- latest ai_forecasts.
+
+Не дублируй сложную логику, если её можно переиспользовать из lib/sku/metrics.ts.
+
+Задача 8. Реализуй GET /api/dashboard.
+Файл:
+- app/api/dashboard/route.ts
+
+Endpoint:
+- должен вернуть DashboardResponse из types/api.ts.
+- Должен покрыть будущие блоки UI:
+  1. KPI cards:
+     - total SKU;
+     - SKU with stockout risk high/critical из latest AI forecasts;
+     - SKU with overstock risk high/critical из latest AI forecasts;
+     - SKU with expiry risk high/critical или партии с близким сроком годности;
+     - total inventory value;
+     - potential write-off value по партиям с близким expiry.
+  2. AI alerts:
+     - из latest AI forecasts.analysis.risks и recommendations, если есть;
+     - если AI forecasts ещё нет, вернуть пустой список alerts и AI status "not generated yet".
+  3. ABC analysis:
+     - count/value/share по A/B/C.
+  4. Days coverage:
+     - top/bottom coverage items.
+  5. Forecast vs fact:
+     - агрегированные monthly actual outbound;
+     - forecast values из latest AI forecasts, если есть;
+     - если forecast отсутствует, points должны быть безопасными для UI и не притворяться AI-прогнозом.
+  6. Top risk SKU:
+     - SKU с high/critical рисками из latest AI forecasts;
+     - если AI forecasts нет, можно вернуть SKU с ближайшим expiry или минимальным daysCoverage как reference risk, но подпись должна быть честной.
+  7. AI status:
+     - total SKU;
+     - forecasted SKU count;
+     - latestForecastCreatedAt;
+     - model;
+     - статус, что AI forecasts ещё не сгенерированы, если ai_forecasts пустая.
+
+Важно:
+- Не делай AI-вызовов.
+- Не записывай в БД.
+- Endpoint read-only.
+
+Задача 9. Error handling.
+- В каждом route используй try/catch.
+- В server console можно писать короткий error для debug.
+- Клиенту возвращай аккуратный JSON:
+  {
+    "error": "..."
+  }
+- Не раскрывай секреты, SQL details и stack trace в response.
+
+Задача 10. Проверка качества.
+Запусти:
+- npm run lint
+- npm run build
+
+Затем запусти dev server:
+- npm run dev
+
+Ручная проверка через PowerShell с session cookie:
+1. Создай web session:
+   $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+
+2. Логин:
+   Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/auth/login -ContentType "application/json" -Body '{"username":"demo","password":"demo12345"}' -WebSession $session
+
+3. Dashboard:
+   Invoke-RestMethod -Method Get -Uri http://localhost:3000/api/dashboard -WebSession $session
+
+4. SKU list:
+   Invoke-RestMethod -Method Get -Uri http://localhost:3000/api/sku -WebSession $session
+
+5. Выбери id первого SKU из ответа и проверь:
+   Invoke-RestMethod -Method Get -Uri "http://localhost:3000/api/sku/<SKU_ID>" -WebSession $session
+
+6. Проверь unauthorized:
+   Invoke-RestMethod -Method Get -Uri http://localhost:3000/api/dashboard
+
+Ожидаемо:
+- с session cookie endpoints возвращают 200 и DTO;
+- без session cookie endpoints возвращают 401 JSON;
+- /api/sku возвращает 20 SKU;
+- /api/sku/[id] возвращает detail, lots и movements;
+- /api/dashboard возвращает KPI/ABC/coverage/status;
+- если ai_forecasts пустая, endpoints не падают.
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат npm run lint;
+- результат npm run build;
+- результаты ручной проверки endpoints;
+- подтверждение, что .env.local не попал в git;
+- подтверждение, что запрещённые файлы не изменялись.
+
+Acceptance criteria:
+- GET /api/dashboard реализован и защищён.
+- GET /api/sku реализован и защищён.
+- GET /api/sku/[id] реализован и защищён.
+- Все endpoints читают реальные Supabase demo data.
+- Все endpoints возвращают DTO из types/api.ts.
+- ai_forecasts может быть пустой, и это не ломает endpoints.
+- Нет fake AI forecasts.
+- Нет OpenRouter вызовов.
+- Нет изменений UI pages/components.
+- Нет изменений Auth flow.
+- Нет изменений Supabase schema/seed.
+- npm run lint проходит.
+- npm run build проходит.
+````

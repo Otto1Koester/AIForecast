@@ -205,51 +205,6 @@ UI: /login, /, /sku, /sku/[id], /methodology. - да
 
 ## Prompt 8 — Замечания к базовому shell и переход к Supabase schema
 ````text
-Ответ от курсора:
-
-Готово. Этап 1 закрыт: проект уже был создан как Next.js App Router без src/, я только привёл структуру к PROJECT_PLAN.md и сделал минимальный визуальный shell.
-
-Созданные файлы
-Страницы (App Router):
-
-app/page.tsx — переписан, нейтральный дашборд-плейсхолдер с KPI-плитками.
-app/login/page.tsx — placeholder с задизейбленной формой username/password.
-app/sku/page.tsx — placeholder каталога SKU.
-app/sku/[id]/page.tsx — placeholder карточки SKU (params: Promise<{ id: string }>, как в Next.js 16).
-app/methodology/page.tsx — placeholder методологии.
-Типы:
-
-types/inventory.ts — SkuItem, InventoryLot, InventoryMovement, AppUser, StorageCondition, AbcClass.
-types/ai.ts — AiForecastAnalysis и связанные типы по схеме из §11 плана + AiForecastRecord, AiForecastRun.
-Конфиг:
-
-.env.example — строго 8 переменных из ТЗ.
-.gitignore — добавлено исключение !.env.example (иначе он попадал под .env*).
-Директории (с .gitkeep, чтобы git их видел):
-
-components/auth, components/dashboard, components/sku, components/charts, components/ui
-lib/auth, lib/supabase, lib/ai, lib/dashboard, lib/utils
-supabase/migrations
-Изменённые файлы
-app/layout.tsx — обновлён metadata (title: "AIForecast", description: "AI-прогнозирование запасов лекарственных средств"), lang="ru", добавлен общий shell: header с логотипом, навигацией Dashboard / SKU / Methodology, кнопкой «Войти», main и footer. Tailwind, без обращения к Supabase/OpenRouter.
-.gitignore — добавлен !.env.example.
-Что НЕ менялось
-PROJECT_PLAN.md, PROMPTS.md — не трогал.
-package.json — все нужные зависимости (next, react, tailwindcss, recharts, @supabase/supabase-js, openai, zod, bcryptjs, jose) уже стояли, ничего не доставлял.
-AGENTS.md / CLAUDE.md — оставил как есть, без противоречивых инструкций.
-Никаких реальных API-ключей, .env.local, отдельного backend, ORM, локального Supabase, Docker для Supabase, auth/AI/DB-логики не добавлял — это следующие этапы.
-Команды для запуска
-npm install
-npm run dev
-npm run build
-npm run lint
-(Перед npm run dev — скопировать .env.example в .env.local и заполнить значения; на этом этапе они ещё не используются в коде.)
-
-Build / Lint статус
-npm run build — успешно: Next.js 16.2.4, скомпилировано за ~5.8s, статически сгенерированы маршруты /, /login, /methodology, /sku, и динамический /sku/[id]. Ошибок нет.
-npm run lint — успешно, без сообщений.
-ReadLints по app/ и types/ — без диагностик.
-
 Всё работает и закоммитано, как ты написал в инструкции. Однако, стартовая страница сейчас не login, а дашборд. При этом с точки зрения UI вверху указана вкладка dashboard, которой не должно быть, т.к. переход на страницу дашборд должен осуществляться через надпись сервиса AIForecast. Также не должно быть кнопки вход - форма авторизации должна появляться сразу при заходе на сервис, если пользователь не авторизован. При этом если пользователь авторизован, то форма логина не должна появляться, а вместо кнопки войти, должна быть кнопка выйти, которая ведет на страницу авторизации. Просмотри скриншот и учти текущее состояние проекта при дальнейшем планировании шагов.
 
 Если у тебя нет замечаний по этому этапу, то можем переходить к следующему.
@@ -513,4 +468,441 @@ Acceptance criteria:
   - 0 ai_forecasts
 - npm run lint проходит.
 - npm run build проходит.
+````
+
+## Prompt 10 — Завершение Supabase schema и переход к Auth
+````text
+Я выполнила всё в соответствии с твоими инструкциями. Проверки прошли успешно. База создана в облаке supabase, данными заполнена .env.local заполнен в обеих ветках нужными значениями для supabase. Жду дальнейшей инструкции.
+````
+
+## Prompt 11 — Codex: demo auth, protected routes и исправление shell
+````text
+Ты работаешь в проекте AIForecast, branch feature/auth-api, worktree AIForecast-auth-api.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй PROJECT_PLAN.md.
+- Стек: Next.js App Router, React, TypeScript, Tailwind CSS, Supabase, OpenRouter, Vercel.
+- Backend только через Next.js Route Handlers внутри app/api/.
+- Supabase используем cloud.
+- Локальный Supabase через Docker не используем.
+- Авторизация простая: без регистрации, один demo user в таблице app_users, пароль хранится как password_hash.
+- Таблица app_users и server-side Supabase helper уже созданы на предыдущем этапе.
+- Сейчас выполняется только Этап 3: Auth и исправление shell под авторизованный/неавторизованный режим.
+
+Цель:
+1. При первом заходе на сервис пользователь должен видеть форму логина.
+2. Неавторизованный пользователь при заходе на /, /sku, /sku/[id], /methodology должен попадать на /login.
+3. После успешного входа пользователь попадает на /.
+4. Страница /login не должна показывать общий app header.
+5. В защищённом header не должно быть отдельной вкладки Dashboard.
+6. Название/логотип AIForecast должен вести на /.
+7. В защищённом header должны быть только ссылки SKU и Methodology плюс кнопка Выйти.
+8. Кнопка Выйти должна удалять session cookie и переводить пользователя на /login.
+9. Не реализуй регистрацию.
+10. Не используй Supabase Auth.
+
+Разрешено менять:
+- app/layout.tsx
+- app/login/page.tsx
+- app/page.tsx, app/sku/page.tsx, app/sku/[id]/page.tsx, app/methodology/page.tsx только для переноса в route group
+- app/(protected)/**
+- app/api/auth/**
+- components/auth/**
+- components/layout/** если нужно
+- components/ui/** если нужен минимальный Button/Card/Input
+- lib/auth/**
+- proxy.ts
+- types/inventory.ts только если нужен экспорт типа пользователя без password_hash
+
+Запрещено менять:
+- supabase/migrations/*
+- supabase/seed.sql
+- lib/supabase/server.ts, кроме критичной TypeScript-ошибки; если нужно менять, сначала объясни зачем
+- lib/ai/*
+- app/api/ai/*
+- app/api/dashboard/*
+- app/api/sku/*
+- components/dashboard/*
+- components/sku/*
+- components/charts/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- package.json и package-lock.json, если нет крайней необходимости
+- .env.example, если переменные уже соответствуют PROJECT_PLAN.md
+- .env.local нельзя создавать в git и нельзя коммитить
+
+Задача 1. Перестрой app layout через route groups:
+- app/layout.tsx должен остаться root layout с html/body, metadata и global styles.
+- Убери из app/layout.tsx общий header/nav/footer, чтобы /login был чистой страницей.
+- Создай app/(protected)/layout.tsx.
+- Перенеси защищённые страницы:
+  - app/page.tsx → app/(protected)/page.tsx
+  - app/sku/page.tsx → app/(protected)/sku/page.tsx
+  - app/sku/[id]/page.tsx → app/(protected)/sku/[id]/page.tsx
+  - app/methodology/page.tsx → app/(protected)/methodology/page.tsx
+- URL должны остаться прежними:
+  - /
+  - /sku
+  - /sku/[id]
+  - /methodology
+- Не должно остаться конфликтующих страниц, которые резолвятся в один и тот же URL.
+
+Задача 2. Реализуй auth helpers:
+Создай файлы в lib/auth:
+- constants.ts
+- session.ts
+- current-user.ts
+
+Требования:
+- Cookie name: aiforecast_session.
+- Session cookie должен быть httpOnly.
+- sameSite: lax.
+- path: /.
+- secure: true в production, false в development.
+- maxAge: 8 часов.
+- Используй JWT_SECRET из process.env.JWT_SECRET.
+- Используй jose для SignJWT и jwtVerify.
+- Не храни password_hash в JWT.
+- Payload JWT должен содержать минимум:
+  - userId
+  - username
+  - displayName
+- Если JWT_SECRET отсутствует, бросай понятную server-side ошибку.
+- current-user helper должен уметь:
+  - прочитать cookie через await cookies() из next/headers;
+  - проверить JWT;
+  - при необходимости вернуть null;
+  - для protected layout предоставить requireCurrentUser(), который делает redirect('/login') при отсутствии или невалидности session.
+- Не используй localStorage/sessionStorage для auth.
+
+Задача 3. Реализуй API endpoints:
+Создай:
+- app/api/auth/login/route.ts
+- app/api/auth/logout/route.ts
+- app/api/auth/me/route.ts
+
+POST /api/auth/login:
+- принимает JSON { username, password };
+- валидирует, что оба поля непустые строки;
+- читает app_users через createSupabaseAdminClient();
+- ищет пользователя по username;
+- сравнивает password с password_hash через bcryptjs.compare;
+- при ошибке возвращает 401 с нейтральным сообщением "Неверный логин или пароль";
+- при успехе создаёт signed session cookie;
+- возвращает JSON:
+  {
+    "user": {
+      "id": "...",
+      "username": "...",
+      "displayName": "..."
+    }
+  }
+- password_hash никогда не возвращать в response.
+
+POST /api/auth/logout:
+- очищает cookie aiforecast_session;
+- возвращает { "ok": true }.
+
+GET /api/auth/me:
+- проверяет session cookie;
+- если session валидна, возвращает user без password_hash;
+- если session отсутствует или невалидна, возвращает 401.
+
+В Route Handlers используй Response.json или NextResponse.json.
+Не используй NextResponse.next() внутри Route Handler.
+
+Задача 4. Реализуй Login UI:
+- app/login/page.tsx должен показывать форму входа без общего app header.
+- Создай components/auth/LoginForm.tsx как client component.
+- Поля:
+  - username
+  - password
+- Кнопка: Войти
+- Можно показать подсказку для demo:
+  - demo / demo12345
+- При submit:
+  - POST /api/auth/login
+  - при успехе router.replace('/')
+  - router.refresh()
+  - при ошибке показать русское сообщение
+- Если пользователь уже авторизован и открывает /login, server page должен redirect('/').
+
+Задача 5. Реализуй protected shell:
+- app/(protected)/layout.tsx должен проверять пользователя через requireCurrentUser().
+- Если пользователь не авторизован, redirect('/login').
+- Header:
+  - слева Link "AIForecast" на /
+  - в навигации только SKU и Methodology
+  - не должно быть ссылки Dashboard
+  - справа кнопка Выйти
+- Создай components/auth/LogoutButton.tsx как client component.
+- LogoutButton:
+  - POST /api/auth/logout
+  - router.replace('/login')
+  - router.refresh()
+- Можно показывать displayName рядом с кнопкой Выйти, но аккуратно.
+
+Задача 6. Реализуй proxy.ts:
+- Используй Next.js 16 file convention proxy.ts, не middleware.ts.
+- proxy.ts должен делать только быстрый redirect на /login, если нет cookie aiforecast_session.
+- Не импортируй Supabase, bcryptjs и тяжёлую auth-логику в proxy.ts.
+- Не делай полноценную JWT-валидацию в proxy.ts.
+- Matcher должен защищать:
+  - /
+  - /sku/:path*
+  - /methodology
+- /login и /api/auth/* не должны блокироваться proxy.
+
+Задача 7. Исправь текущие placeholder pages после переноса:
+- На dashboard placeholder убери текст, который говорит, что "Этап 1".
+- Можно оставить нейтральный текст "Данные будут загружены из Supabase на следующих этапах".
+- На всех защищённых страницах не должно быть кнопки "Войти".
+- Визуально всё должно быть аккуратно и на русском.
+
+Задача 8. Проверка:
+- Запусти npm run lint.
+- Запусти npm run build.
+- Запусти npm run dev и проверь вручную:
+  1. /login открывается без header.
+  2. Неверный пароль показывает ошибку.
+  3. demo / demo12345 логинит и переводит на /.
+  4. На / нет вкладки Dashboard.
+  5. Логотип AIForecast ведёт на /.
+  6. В header есть SKU, Methodology и Выйти.
+  7. /sku открывается после логина.
+  8. /sku/demo открывается после логина.
+  9. /methodology открывается после логина.
+  10. Выйти переводит на /login.
+  11. После logout прямой заход на /sku переводит на /login.
+  12. GET /api/auth/me после login возвращает user, после logout возвращает 401.
+- Покажи список изменённых файлов.
+- Покажи git diff --stat.
+- Убедись, что нет .env.local в git.
+- Убедись, что нет секретов в коде.
+
+Acceptance criteria:
+- npm run lint проходит.
+- npm run build проходит.
+- Login flow работает через Supabase app_users и bcrypt hash.
+- Session хранится в httpOnly cookie.
+- Protected pages защищены.
+- Header соответствует замечаниям:
+  - нет Dashboard tab;
+  - AIForecast ведёт на /;
+  - вместо Войти есть Выйти;
+  - /login без общего header.
+- Не реализованы Data API и AI endpoint на этом этапе.
+````
+
+## Prompt 12 — Supabase возвращает permission denied
+````text
+На этом этапе кодекс ответил:
+
+Важный блокер по реальному login: текущий cloud Supabase возвращает permission denied for table app_users при server-side запросе к app_users, поэтому demo / demo12345 сейчас получает 401 на этой машине. Ключи/хэш не выводил. Код использует createSupabaseAdminClient() и bcryptjs.compare, но нужно поправить Supabase env/grants/service role в cloud, не через запрещённые migration edits.
+
+Возможно я не верно указала значения:
+
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+JWT_SECRET=
+
+Подскажи как проверить что они правильные или нет и где искать в консоле супабейс правильные значения?
+````
+
+## Prompt 13 — Неверный ключ Supabase
+````text
+Этот ключ тоже не подходит, в чем может быть проблема?
+````
+
+## Prompt 14 — Изменение схемы базы данных
+````text
+Заработало, дай промт для кодекс на внесение изменений в схему базы данных в ветке feature/db-supabase
+````
+
+## Prompt 15 — Codex: grant service role privileges
+````text
+Ты работаешь в проекте AIForecast, branch feature/db-supabase.
+
+Контекст:
+
+* На этапе Auth реальный login через demo / demo12345 сначала падал с ошибкой: permission denied for table app_users.
+* Проблема была решена вручную в Supabase Cloud через GRANT в SQL Editor.
+* После GRANT login flow заработал.
+* Нужно сделать это изменение воспроизводимым в репозитории через SQL migration.
+* Auth-код менять не нужно.
+* Seed-данные менять не нужно.
+* Реальные ключи/env не добавлять.
+
+Следуй PROJECT_PLAN.md:
+
+* Supabase schema и SQL seed должны храниться в репозитории.
+* Supabase используем cloud, локальный Supabase через Docker не используем.
+* service role key используется только server-side.
+* Ветка feature/db-supabase имеет право менять только DB-related файлы.
+
+Разрешено менять только:
+
+* supabase/migrations/*
+* при крайней необходимости: supabase/seed.sql
+* при крайней необходимости: types/inventory.ts
+* при крайней необходимости: lib/supabase/*
+
+Запрещено менять:
+
+* app/**
+* components/**
+* lib/auth/**
+* app/api/auth/**
+* app/api/ai/**
+* lib/ai/**
+* PROJECT_PLAN.md
+* PROMPTS.md
+* README.md
+* package.json
+* package-lock.json
+* .env.local
+* любые файлы с секретами
+
+Задача:
+
+1. Создай новую migration:
+
+supabase/migrations/002_grant_service_role_privileges.sql
+
+2. В migration добавь SQL, который выдаёт роли service_role права на public schema, существующие tables, sequences и routines.
+
+Содержимое migration должно быть таким:
+
+-- Grant service_role access to public schema objects.
+-- This is required because RLS bypass by service_role is not enough
+-- when PostgreSQL table privileges were not granted.
+
+grant usage on schema public to service_role;
+
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+grant all privileges on all routines in schema public to service_role;
+
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant all on sequences to service_role;
+alter default privileges in schema public grant all on routines to service_role;
+
+3. Не добавляй policies для anon/authenticated.
+4. Не отключай RLS.
+5. Не добавляй Supabase Auth.
+6. Не меняй password hash.
+7. Не меняй demo user.
+8. Не добавляй реальные API keys.
+9. Не трогай auth implementation — она уже работает после ручного GRANT.
+
+Дополнительно:
+
+* Проверь, что migration не содержит секретов.
+* Проверь, что SQL можно выполнить повторно в Supabase SQL Editor без разрушения данных.
+* Добавь в конец своего ответа проверочный SQL, который можно выполнить вручную в Supabase SQL Editor:
+
+select
+has_schema_privilege('service_role', 'public', 'usage') as service_role_has_public_usage,
+has_table_privilege('service_role', 'public.app_users', 'select') as service_role_can_select_app_users,
+has_table_privilege('service_role', 'public.app_users', 'insert') as service_role_can_insert_app_users,
+has_table_privilege('service_role', 'public.sku_items', 'select') as service_role_can_select_sku_items,
+has_table_privilege('service_role', 'public.ai_forecasts', 'insert') as service_role_can_insert_ai_forecasts;
+
+Acceptance criteria:
+
+* Создан файл supabase/migrations/002_grant_service_role_privileges.sql.
+* Другие файлы не изменены, если не было крайней необходимости.
+* git diff --name-only показывает только новую migration.
+* npm run lint проходит.
+* npm run build проходит.
+* Login/auth код не изменён.
+* Нет секретов в diff.
+````
+
+## Prompt 16 — Возврат пункта Dashboard в header
+````text
+Выполнила из последних инструкций все до 6 пункта. Все успешно работает. Однако я хотела бы вернуть Dashboard в header, дай мне соответствующий промт для кодекса в ту же ветку feature/auth-api.
+````
+
+## Prompt 17 — Codex: возврат пункта Dashboard в header
+````text
+Ты работаешь в проекте AIForecast, branch feature/auth-api, worktree AIForecast-auth-api.
+
+Контекст:
+- Auth flow уже реализован и работает.
+- Защищённый app shell находится в app/(protected)/layout.tsx или связанном layout/header-компоненте.
+- Ранее из header была убрана ссылка Dashboard, но продуктово мы решили вернуть её для явной навигации.
+- / остаётся домашним дашбордом.
+- /login должен оставаться без общего header.
+- Неавторизованный пользователь всё так же должен попадать на /login.
+- Авторизованный пользователь видит protected header.
+
+Задача:
+1. Верни ссылку Dashboard в protected header.
+2. Header авторизованной части должен содержать:
+   - слева логотип/название AIForecast, который ведёт на /
+   - навигацию: Dashboard, SKU, Methodology
+   - справа user displayName, если он уже выводится
+   - кнопку Выйти
+3. Ссылка Dashboard должна вести на /.
+4. Название AIForecast тоже должно вести на /.
+5. Не добавляй кнопку Войти в protected header.
+6. Не меняй /login layout: страница логина должна оставаться без общего header.
+7. Не меняй auth API, session helpers, Supabase schema, seed, AI files, PROJECT_PLAN.md, PROMPTS.md.
+8. Не добавляй новые зависимости.
+9. Визуально сохрани текущий аккуратный стиль header.
+
+Разрешено менять только:
+- app/(protected)/layout.tsx
+- components/layout/*, если header вынесен туда
+- components/auth/LogoutButton.tsx только если это технически необходимо, но лучше не трогать
+
+Запрещено менять:
+- app/api/auth/*
+- lib/auth/*
+- lib/supabase/*
+- supabase/*
+- app/login/page.tsx, если не требуется
+- app/api/ai/*
+- lib/ai/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- package.json
+- package-lock.json
+- .env.local
+
+Проверка:
+1. npm run lint
+2. npm run build
+3. npm run dev
+4. Ручная проверка:
+   - /login открывается без header
+   - после login demo / demo12345 открывается /
+   - в header есть Dashboard, SKU, Methodology, Выйти
+   - Dashboard ведёт на /
+   - AIForecast ведёт на /
+   - Выйти переводит на /login
+   - после logout прямой заход на / переводит на /login
+
+После завершения покажи:
+- список изменённых файлов
+- git diff --stat
+- результат lint/build
+````
+
+## Prompt 18 — Прояснение плана по параллельной разработке
+````text
+Скажи а в какой момент мы будем параллелить задачи? Сейчас мы делаем последовательно и у нас одновременно загружен только один агент.
+````
+
+## Prompt 19 — Предложение по параллельной разработке ui
+````text
+А мы можем также параллелить ui по экранам, к примеру пока клауд делает дашборд, в другой ветке тому же клауд поручить делать каталог SKU?
+````
+
+## Prompt 20 — Утверждение параллельной разработки и обновление PROJECT_PLAN.md
+````text
+Я утверждаю стратегию распараллеливания. Теперь возьми документ из источников PROJECT_PLAN.md и добавь в него информацию по распараллеливанию, чтобы план стал актуальным и мы, ориентируясь на него, выполняли дальнейшие шаги. Дай мне обновленный документ.
 ````

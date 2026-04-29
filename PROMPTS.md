@@ -1530,3 +1530,501 @@ Acceptance criteria:
 - npm run lint проходит.
 - npm run build проходит.
 ````
+
+## Prompt 26 — Запуск следующей параллельной задачи после Data API
+````text
+Шаг запущен в параллель, давай следующий шаг.
+````
+
+## Prompt 27 — Добавление ключа openrouter.ai
+````text
+У меня есть ключ от https://openrouter.ai/ и env файл, как его правильно заполнить, чтобы ии мог подключаться и слать запросы из typescript?
+
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+JWT_SECRET=
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=http://localhost:3000
+OPENROUTER_APP_TITLE=AIForecast
+AI_BATCH_LIMIT=5
+````
+
+## Prompt 28 — Проверка ключа openrouter.ai
+````text
+Как проверить, что переменные заполнены верно, и подключение возможно из Cursor IDE?
+````
+
+## Prompt 29 — Codex: OpenRouter AI forecast engine
+````text
+Ты работаешь в проекте AIForecast, branch feature/ai-engine, worktree AIForecast-ai-engine.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Уже завершены и merged в feature/mvp:
+  - Next.js app;
+  - Supabase schema и demo data;
+  - Auth;
+  - UI/API contracts.
+- Параллельно сейчас работает feature/data-api. Она может менять app/api/dashboard/*, app/api/sku/*, lib/dashboard/*, lib/sku/*.
+- Поэтому в этой ветке НЕ трогай Data API и НЕ меняй lib/sku/*, чтобы не создавать конфликты.
+- Backend только через Next.js Route Handlers внутри app/api/.
+- Supabase используем только server-side через service role helper.
+- Supabase service role key не должен попадать в клиентский код.
+- OpenRouter вызываем только server-side.
+- Локальный Supabase через Docker не используем.
+- AI является главным forecast/decision engine.
+- Код не должен строить отдельный deterministic forecast engine.
+- Код может считать только справочные метрики для входного контекста AI и guardrails для валидации результата.
+- Сейчас выполняется только Этап 5: AI forecast engine.
+
+Главная цель:
+Реализовать реальный OpenRouter AI forecast engine:
+1. POST /api/ai/forecast/[skuId]
+2. POST /api/ai/forecast/batch
+3. OpenRouter client
+4. structured JSON schema
+5. Zod validation
+6. сбор SKU-контекста из Supabase
+7. сохранение результата в ai_forecasts
+8. run-log в ai_forecast_runs
+9. защита от лишних повторных вызовов через input_hash
+10. корректная работа с Auth
+
+Разрешено менять:
+- app/api/ai/forecast/[skuId]/route.ts
+- app/api/ai/forecast/batch/route.ts
+- lib/ai/*
+- types/ai.ts
+- types/api.ts только если есть критичная несовместимость с уже утверждёнными DTO, но лучше не менять
+- lib/auth/* только если уже нет способа получить current user без redirect; если возможно, только читать
+- lib/supabase/server.ts только если обнаружена критичная ошибка, но сначала объясни в ответе зачем
+- .env.example только если отсутствует переменная из PROJECT_PLAN.md, но скорее всего не менять
+
+Можно читать:
+- supabase/migrations/001_init_schema.sql
+- supabase/seed.sql
+- types/inventory.ts
+- types/api.ts
+- lib/auth/*
+- lib/supabase/server.ts
+
+Запрещено менять:
+- app/api/dashboard/*
+- app/api/sku/*
+- lib/dashboard/*
+- lib/sku/*
+- app/(protected)/*
+- app/login/page.tsx
+- components/*
+- supabase/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- package.json
+- package-lock.json
+- .env.local нельзя коммитить
+- любые UI-файлы
+
+Задача 1. Изучи текущие файлы:
+1. PROJECT_PLAN.md
+2. types/ai.ts
+3. types/api.ts
+4. types/inventory.ts
+5. supabase/migrations/001_init_schema.sql
+6. lib/supabase/server.ts
+7. lib/auth/current-user.ts или аналогичные auth helpers
+8. app/api/auth/*, чтобы понять API auth style
+
+Важно:
+- Не дублируй уже существующий AiForecastAnalysis, если он есть.
+- Если types/ai.ts уже содержит AiForecastAnalysis, используй его.
+- Если нужна Zod-схема, создай её в lib/ai/schema.ts, а не меняй типы без необходимости.
+- UI не трогай.
+
+Задача 2. Реализуй OpenRouter client.
+
+Создай:
+- lib/ai/openrouter.ts
+
+Требования:
+- Используй пакет openai, если он уже установлен.
+- Используй OpenAI-compatible client:
+  - apiKey: process.env.OPENROUTER_API_KEY
+  - baseURL: "https://openrouter.ai/api/v1"
+- Не создавай client на top-level, если из-за env может падать build.
+- Экспортируй функцию createOpenRouterClient().
+- Если OPENROUTER_API_KEY отсутствует, бросай понятную server-side ошибку.
+- Модель брать из process.env.OPENROUTER_MODEL или использовать fallback "openai/gpt-4o-mini".
+- Для OpenRouter headers используй:
+  - HTTP-Referer из OPENROUTER_SITE_URL, если есть
+  - X-Title из OPENROUTER_APP_TITLE, если есть
+- Не отправляй ключи в browser.
+- Не логируй API key.
+
+Задача 3. Реализуй AI response Zod schema.
+
+Создай:
+- lib/ai/schema.ts
+
+Schema должна соответствовать AiForecastAnalysis из types/ai.ts и PROJECT_PLAN.md:
+
+AiForecastAnalysis:
+- skuId: string
+- forecast:
+  - oneMonthDemand: number >= 0
+  - threeMonthDemand: number >= 0
+  - sixMonthDemand: number >= 0
+  - confidence: number between 0 and 1
+  - trend: "declining" | "stable" | "growing"
+  - seasonality: string
+  - anomalies: array of:
+    - period: string
+    - type: "spike" | "drop" | "writeoff" | "supply_gap"
+    - explanation: string
+- reorder:
+  - rop: number >= 0
+  - eoq: number >= 0
+  - safetyStock: number >= 0
+  - leadTimeDemand: number >= 0
+  - explanation: string
+- risks:
+  - stockout:
+    - level: "low" | "medium" | "high" | "critical"
+    - daysToStockout: number >= 0 or null
+    - explanation: string
+  - overstock:
+    - level: "low" | "medium" | "high" | "critical"
+    - daysCoverage: number >= 0 or null
+    - explanation: string
+  - expiry:
+    - level: "low" | "medium" | "high" | "critical"
+    - quantityAtRisk: number >= 0
+    - explanation: string
+- recommendations: array of:
+  - action: "reorder" | "accelerate_sales" | "write_off" | "monitor" | "adjust_safety_stock"
+  - priority: "low" | "medium" | "high" | "urgent"
+  - suggestedQuantity?: number >= 0
+  - deadlineDays?: number >= 0
+  - reasoning: string
+- executiveSummary: string
+
+Экспортируй:
+- aiForecastAnalysisSchema
+- type AiForecastAnalysisInput если нужно
+- jsonSchema для OpenRouter response_format, если реализуешь вручную
+
+Важно:
+- Для OpenRouter structured output нужен JSON Schema.
+- Не полагайся только на prompt. После ответа модели обязательно валидируй Zod.
+- Если модель вернула строку JSON, распарси её безопасно.
+- Если модель вернула объект, валидируй объект.
+
+Задача 4. Реализуй JSON Schema для OpenRouter structured outputs.
+
+Создай:
+- lib/ai/json-schema.ts
+
+Требования:
+- Экспортируй объект aiForecastJsonSchema.
+- Schema должна соответствовать AiForecastAnalysis.
+- additionalProperties: false на ключевых уровнях.
+- required для всех обязательных полей.
+- Используй type: "object", properties, required.
+- Для nullable числовых полей используй type: ["number", "null"], если поддерживается, или anyOf.
+- Для enum используй enum.
+
+В OpenRouter request используй response_format:
+{
+  type: "json_schema",
+  json_schema: {
+    name: "ai_forecast_analysis",
+    strict: true,
+    schema: aiForecastJsonSchema
+  }
+}
+
+Задача 5. Реализуй сбор AI context.
+
+Создай:
+- lib/ai/context.ts
+
+Требования:
+- Не используй lib/sku/*, потому что feature/data-api меняет его параллельно.
+- Прямо через createSupabaseAdminClient() прочитай:
+  - sku_items по skuId;
+  - inventory_lots по skuId;
+  - inventory_movements по skuId order by period_month asc;
+  - последний ai_forecasts по skuId order by created_at desc limit 1.
+- Если SKU не найден, брось NotFound error или верни понятный result для route.
+- Собери компактный контекст для AI:
+  - sku passport;
+  - current stock;
+  - costs;
+  - lead time;
+  - service level;
+  - storage condition;
+  - shelf life;
+  - lots with expiry;
+  - movement history 18 months;
+  - anomaly months from anomaly_flag/anomaly_note;
+  - simple reference metrics:
+    - average monthly outbound;
+    - last 3 months outbound average;
+    - average daily outbound;
+    - days coverage;
+    - writeoff total;
+    - inbound total;
+    - outbound total;
+    - expiry quantity in 90 days;
+    - expiry quantity in 180 days.
+- Эти метрики только для входа AI и guardrails, не как deterministic forecast.
+- Экспортируй:
+  - buildAiForecastContext(skuId: string)
+  - buildAiInputHash(context)
+- input_hash должен быть стабильным для одинакового контекста.
+- Используй node:crypto createHash("sha256").
+- Не включай секреты в hash/input.
+
+Задача 6. Реализуй prompt builder.
+
+Создай:
+- lib/ai/prompt.ts
+
+Требования:
+- Системный prompt:
+  - ты AI-аналитик supply chain для фармацевтической компании;
+  - анализируешь запасы ЛС;
+  - учитываешь сезонность, тренды, аномалии, lead time, срок годности, списания;
+  - возвращаешь только JSON по schema;
+  - не добавляешь markdown;
+  - не выдумываешь SKU, которых нет во входе;
+  - ROP/EOQ должны быть неотрицательными;
+  - если данных мало, снижай confidence и объясняй uncertainty;
+  - рекомендации должны быть практическими.
+- User prompt:
+  - передай compact JSON context.
+- Не делай prompt слишком длинным.
+- Сохрани язык вывода: русский для explanations/recommendations.
+- Названия enum должны быть строго на английском, как в schema.
+
+Экспортируй:
+- buildAiForecastMessages(context)
+
+Задача 7. Реализуй service для вызова AI.
+
+Создай:
+- lib/ai/forecast-service.ts
+
+Функция:
+- generateAiForecastForSku(skuId: string, options?: { force?: boolean })
+
+Логика:
+1. Собрать context.
+2. Посчитать input_hash.
+3. Проверить последний ai_forecasts:
+   - если latest.input_hash совпадает и force !== true, вернуть cached результат без нового OpenRouter вызова.
+   - в response/metadata явно указать source: "cache".
+4. Если cache miss или force true:
+   - создать run в ai_forecast_runs со status "running" или "started", если status check constraints позволяют; если в schema status свободный text, используй "running".
+   - вызвать OpenRouter.
+   - запросить structured JSON.
+   - распарсить ответ.
+   - провалидировать Zod.
+   - применить guardrails:
+     - skuId в ответе должен совпадать с requested skuId;
+     - forecast numbers >= 0;
+     - rop/eoq >= 0;
+     - confidence 0..1.
+   - сохранить в ai_forecasts:
+     - sku_id
+     - model
+     - input_hash
+     - forecast_1m
+     - forecast_3m
+     - forecast_6m
+     - rop
+     - eoq
+     - stockout_risk
+     - overstock_risk
+     - expiry_risk
+     - confidence
+     - analysis
+     - raw_response
+   - обновить run status "success", finished_at.
+   - вернуть saved forecast + analysis + source: "openrouter".
+5. При ошибке:
+   - записать run status "error", error_message, finished_at, если run создан.
+   - пробросить понятную ошибку наверх.
+6. Не создавай fake fallback forecast.
+7. Не делай автоматический retry больше 1 раза.
+8. Если retry реализуешь — только при parse/validation error, и запиши это аккуратно.
+
+Важно:
+- Нельзя возвращать fake forecast при ошибке OpenRouter.
+- Если OpenRouter недоступен, endpoint должен вернуть ошибку, а не поддельные данные.
+- Это осознанное решение для демонстрации реального AI.
+
+Задача 8. Реализуй persistence helpers.
+
+Можно создать:
+- lib/ai/persistence.ts
+
+Функции:
+- getLatestForecastForSku(skuId)
+- insertForecast(...)
+- insertForecastRun(...)
+- updateForecastRun(...)
+- mapForecastRowToDto(...)
+
+Не меняй Data API helpers.
+
+Задача 9. Реализуй API route POST /api/ai/forecast/[skuId].
+
+Файл:
+- app/api/ai/forecast/[skuId]/route.ts
+
+Требования:
+- Только POST.
+- Требует авторизацию.
+- Для API при отсутствии session возвращай JSON 401:
+  { "error": "Unauthorized" }
+- Не делай redirect('/login') из API route.
+- Params в Next.js 16 могут быть Promise, используй await params, если так сделано в проекте.
+- Body optional:
+  {
+    "force": true
+  }
+- Если SKU не найден, возвращай 404 JSON:
+  { "error": "SKU not found" }
+- При успехе возвращай JSON с:
+  - skuId
+  - source: "cache" | "openrouter"
+  - model
+  - inputHash
+  - forecast
+  - createdAt
+  - analysis
+- Тип ответа должен быть совместим с AiRecalculateResponse из types/api.ts.
+- Не меняй DTO без крайней необходимости.
+- Не вызывай OpenRouter при cache hit, если force !== true.
+
+Задача 10. Реализуй API route POST /api/ai/forecast/batch.
+
+Файл:
+- app/api/ai/forecast/batch/route.ts
+
+Требования:
+- Только POST.
+- Требует авторизацию.
+- Body:
+  {
+    "skuIds": ["..."],
+    "force": false
+  }
+- Если skuIds не переданы или пустые:
+  - выбери первые N SKU из sku_items order by created_at asc.
+- N ограничить AI_BATCH_LIMIT из env, default 5.
+- Не запускать больше лимита.
+- Обрабатывай SKU последовательно, не параллельно, чтобы не сжечь бюджет.
+- Для каждого SKU:
+  - вызвать generateAiForecastForSku(skuId, { force })
+  - сохранить success/error item
+- Общий response совместим с AiBatchForecastResponse из types/api.ts:
+  - totalRequested
+  - processed
+  - succeeded
+  - failed
+  - items
+- Если один SKU упал, batch не должен падать целиком.
+- Не возвращай stack trace.
+
+Задача 11. Auth в AI API.
+
+- Используй существующий helper, который возвращает user/null.
+- Если есть только redirect-helper, не используй его в API.
+- Если нужно, создай маленький helper в lib/auth только если это не ломает auth:
+  - requireApiUser(): Promise<{ id; username; displayName } | null>
+- Но сначала проверь существующие helpers.
+- Не меняй login/logout/me logic.
+
+Задача 12. Проверка качества.
+
+Запусти:
+- npm run lint
+- npm run build
+
+Затем dev server:
+- npm run dev
+
+Ручная проверка PowerShell:
+
+1. Создать session:
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+
+2. Login:
+Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/auth/login -ContentType "application/json" -Body '{"username":"demo","password":"demo12345"}' -WebSession $session
+
+3. Получить один SKU id.
+Если feature/data-api ещё не merged в эту ветку, /api/sku может отсутствовать. Тогда временно возьми SKU id из Supabase Table Editor.
+Если /api/sku есть, можно:
+$skuList = Invoke-RestMethod -Method Get -Uri http://localhost:3000/api/sku -WebSession $session
+$skuId = $skuList.items[0].id
+
+4. Запустить AI forecast для одного SKU:
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/ai/forecast/$skuId" -ContentType "application/json" -Body '{"force":true}' -WebSession $session
+
+5. Повторить без force:
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/ai/forecast/$skuId" -ContentType "application/json" -Body '{}' -WebSession $session
+
+Ожидаемо второй вызов должен вернуть source "cache", если input_hash не изменился.
+
+6. Batch на 2 SKU:
+Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/ai/forecast/batch -ContentType "application/json" -Body '{"skuIds":["SKU_ID_1","SKU_ID_2"],"force":false}' -WebSession $session
+
+7. Unauthorized:
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/ai/forecast/$skuId" -ContentType "application/json" -Body '{}'
+
+Ожидаемо:
+- без session cookie 401 JSON;
+- с session cookie POST по одному SKU возвращает AI analysis;
+- повторный вызов без force возвращает cache;
+- batch возвращает summary items;
+- ai_forecasts пополняется;
+- ai_forecast_runs пополняется;
+- ошибок build/lint нет.
+
+Если OpenRouter вызов не проходит:
+- Не создавай fake fallback.
+- Покажи текст ошибки без секретов.
+- Проверь env OPENROUTER_API_KEY и модель.
+- Не логируй API key.
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат npm run lint;
+- результат npm run build;
+- результат ручной проверки одного SKU;
+- результат проверки cache hit;
+- результат batch на 1–2 SKU;
+- подтверждение, что .env.local не попал в git;
+- подтверждение, что запрещённые файлы не изменялись.
+
+Acceptance criteria:
+- POST /api/ai/forecast/[skuId] реализован и защищён.
+- POST /api/ai/forecast/batch реализован и защищён.
+- Реальный OpenRouter вызов работает.
+- Structured JSON используется.
+- Zod validation используется.
+- AI result сохраняется в ai_forecasts.
+- Run-log пишется в ai_forecast_runs.
+- Cache по input_hash работает.
+- Нет fake fallback forecast.
+- Нет изменений UI.
+- Нет изменений Data API.
+- Нет изменений Supabase schema/seed.
+- npm run lint проходит.
+- npm run build проходит.
+````

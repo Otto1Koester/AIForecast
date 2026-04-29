@@ -1,0 +1,70 @@
+"use client";
+
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+
+import type { DashboardAbcItem } from "@/types/api";
+
+export type AbcChartProps = {
+  items: DashboardAbcItem[];
+};
+
+const colorByClass: Record<DashboardAbcItem["abcClass"], string> = {
+  A: "#10b981",
+  B: "#f59e0b",
+  C: "#6366f1",
+};
+
+export function AbcChart({ items }: AbcChartProps) {
+  const data = items.map((item) => ({
+    name: `Класс ${item.abcClass}`,
+    abcClass: item.abcClass,
+    value: item.inventoryValue,
+    skuCount: item.skuCount,
+    share: item.share,
+  }));
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={55}
+          outerRadius={95}
+          paddingAngle={2}
+          stroke="none"
+        >
+          {data.map((entry) => (
+            <Cell key={entry.abcClass} fill={colorByClass[entry.abcClass]} />
+          ))}
+        </Pie>
+        <Tooltip
+          formatter={(value, _name, item) => {
+            const payload = (item as { payload?: { skuCount: number; share: number } })
+              ?.payload;
+            const numeric = typeof value === "number" ? value : Number(value);
+            const formatted = new Intl.NumberFormat("ru-RU", {
+              maximumFractionDigits: 0,
+            }).format(Number.isFinite(numeric) ? numeric : 0);
+            const share = payload ? Math.round(payload.share * 100) : null;
+            const sku = payload ? `${payload.skuCount} SKU` : "";
+            return [
+              `${formatted} ₽${share != null ? ` · ${share}%` : ""} · ${sku}`,
+              "Стоимость запасов",
+            ];
+          }}
+          contentStyle={{ borderRadius: 8, fontSize: 12 }}
+        />
+        <Legend verticalAlign="bottom" height={28} iconType="circle" />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}

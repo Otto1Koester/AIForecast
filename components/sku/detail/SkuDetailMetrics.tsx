@@ -1,0 +1,52 @@
+import type { ReactNode } from "react";
+
+import { KpiCard, type KpiTone } from "@/components/ui/KpiCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import type { SkuDetailMetric } from "@/types/api";
+
+type SkuDetailMetricsProps = {
+  metrics: SkuDetailMetric[];
+};
+
+function formatValue(
+  value: SkuDetailMetric["value"],
+  unit: string | undefined,
+): string {
+  if (typeof value === "number") {
+    const formatted = new Intl.NumberFormat("ru-RU", {
+      maximumFractionDigits: 1,
+    }).format(value);
+    return unit ? `${formatted} ${unit}` : formatted;
+  }
+  return unit ? `${value} ${unit}` : value;
+}
+
+export function SkuDetailMetrics({
+  metrics,
+}: SkuDetailMetricsProps): ReactNode {
+  if (metrics.length === 0) {
+    return (
+      <EmptyState
+        title="Метрики ещё не рассчитаны"
+        description="Ключевые показатели появятся, как только в Supabase будут движения и остатки."
+      />
+    );
+  }
+
+  return (
+    <section
+      aria-label="Ключевые метрики SKU"
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+    >
+      {metrics.map((metric) => (
+        <KpiCard
+          key={metric.id}
+          title={metric.label}
+          value={formatValue(metric.value, metric.unit)}
+          description={metric.description}
+          tone={(metric.tone ?? "neutral") as KpiTone}
+        />
+      ))}
+    </section>
+  );
+}

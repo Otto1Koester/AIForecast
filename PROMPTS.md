@@ -2264,3 +2264,269 @@ Acceptance criteria:
 - npm run lint проходит.
 - npm run build проходит.
 ````
+
+## Prompt 32 — Запуск SKU Catalog UI после Dashboard UI
+````text
+Запустила AIForecast-ui-dashboard. Давай следующий шаг в параллель.
+````
+
+## Prompt 33 — Claude: SKU Catalog UI screen
+````text
+Ты работаешь в проекте AIForecast, branch feature/ui-sku-catalog, worktree AIForecast-ui-sku-catalog.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Уже завершены и merged в feature/mvp:
+  - Next.js app;
+  - Supabase schema и demo data;
+  - Auth;
+  - UI/API contracts.
+- Сейчас параллельно работают:
+  - feature/data-api: реализует /api/dashboard, /api/sku, /api/sku/[id]
+  - feature/ai-engine: реализует OpenRouter AI endpoints
+  - feature/ui-dashboard: реализует dashboard UI
+- Поэтому в этой ветке НЕ трогай app/api/*, lib/*, types/*, dashboard files и SKU detail files.
+- Эта ветка отвечает только за визуальный экран каталога SKU.
+- Header уже реализован в protected layout и содержит Dashboard, SKU, Methodology, Выйти. Не меняй header.
+- /login остаётся отдельной страницей без protected header. Не меняй login.
+
+Цель:
+Собрать красивый, демонстрационно убедительный SKU catalog на странице /sku, который после merge Data API сможет читать SkuListResponse из /api/sku.
+
+Каталог должен выглядеть как рабочий бизнес-инструмент:
+- список SKU;
+- поиск;
+- фильтры;
+- сортировка;
+- текущий остаток;
+- дни покрытия;
+- ABC-класс;
+- ROP;
+- EOQ;
+- AI-риски;
+- AI-рекомендация;
+- переход в карточку SKU.
+
+Разрешено менять:
+- app/(protected)/sku/page.tsx
+- components/sku/catalog/*
+
+Разрешено использовать, но НЕ менять:
+- components/ui/KpiCard.tsx
+- components/ui/RiskBadge.tsx
+- components/ui/EmptyState.tsx
+- components/ui/LoadingState.tsx
+- components/ui/ErrorState.tsx
+- components/charts/ChartContainer.tsx
+- types/api.ts
+- types/ai.ts
+- types/inventory.ts
+
+Запрещено менять:
+- app/(protected)/page.tsx
+- app/(protected)/sku/[id]/page.tsx
+- app/(protected)/methodology/page.tsx
+- app/(protected)/layout.tsx
+- app/login/page.tsx
+- app/api/*
+- lib/*
+- supabase/*
+- components/dashboard/*
+- components/charts/dashboard/*
+- components/charts/sku/*
+- components/sku/detail/*
+- components/ui/*
+- components/auth/*
+- components/layout/*
+- types/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- package.json
+- package-lock.json
+- .env.example
+- .env.local
+
+Задача 1. Изучи контракты и shared components:
+- types/api.ts
+- components/ui/KpiCard.tsx
+- components/ui/RiskBadge.tsx
+- components/ui/EmptyState.tsx
+- components/ui/LoadingState.tsx
+- components/ui/ErrorState.tsx
+- app/(protected)/layout.tsx только чтобы понять header, но не меняй его.
+
+Задача 2. Реализуй SKU catalog page.
+Файл:
+- app/(protected)/sku/page.tsx
+
+Страница должна:
+- быть защищённой через существующий protected layout;
+- не реализовывать auth самостоятельно;
+- рендерить SKU catalog UI;
+- использовать компоненты из components/sku/catalog/*;
+- не обращаться к Supabase напрямую;
+- не вызывать OpenRouter напрямую;
+- получать данные только через /api/sku.
+
+Важно:
+Так как feature/data-api может быть ещё не merged в эту ветку, /api/sku может временно отвечать 404. Поэтому UI должен корректно показывать error/empty state, но не должен содержать fake business data в коде.
+
+Задача 3. Создай catalog client component.
+Создай, например:
+- components/sku/catalog/SkuCatalogClient.tsx
+
+Требования:
+- Это client component.
+- Делает fetch("/api/sku") после mount.
+- Типизирует ответ как SkuListResponse из types/api.ts.
+- Состояния:
+  - loading;
+  - error;
+  - empty;
+  - success.
+- Если endpoint вернул 401, показать понятное сообщение.
+- Если endpoint пока 404, показать аккуратное сообщение: "SKU API ещё не подключён".
+- Не добавляй моковые SKU или fake business data.
+- Не пиши demo data в TypeScript.
+- Никаких OpenRouter вызовов из UI.
+
+Задача 4. Создай catalog sections/components.
+Создай файлы на своё усмотрение внутри components/sku/catalog, например:
+- SkuCatalogHeader.tsx
+- SkuCatalogFilters.tsx
+- SkuCatalogTable.tsx
+- SkuCatalogCardGrid.tsx, если нужен responsive mobile view
+- SkuCatalogSummary.tsx
+- SkuCatalogToolbar.tsx
+
+Требования:
+- Используй SkuListResponse, SkuListItem, SkuCatalogFiltersState из types/api.ts.
+- Используй RiskBadge для рисков.
+- Используй EmptyState, LoadingState, ErrorState.
+- Если нужно показать KPI summary, можно использовать KpiCard.
+- Не добавляй новые зависимости.
+- Не меняй app/globals.css.
+- Используй Tailwind classes локально.
+
+Задача 5. UX и визуальная иерархия.
+Catalog должен выглядеть как рабочий экран, а не placeholder.
+
+Обязательные блоки:
+1. Header внутри страницы:
+   - title: "Каталог SKU"
+   - subtitle: "Остатки, сроки годности, риски и AI-рекомендации по товарным позициям"
+   - краткое пояснение, что данные загружаются из Supabase, а AI-метрики появляются после расчёта прогноза.
+2. Summary cards:
+   - всего SKU;
+   - суммарная стоимость запасов, если есть в DTO/meta;
+   - SKU с критическими рисками, если есть;
+   - SKU без AI-прогноза, если можно определить из DTO.
+3. Search:
+   - поиск по названию, категории или условиям хранения.
+4. Filters:
+   - ABC A/B/C;
+   - risk level;
+   - storageCondition;
+   - category.
+5. Sorting:
+   - risk;
+   - daysCoverage;
+   - inventoryValue;
+   - currentStock;
+   - latestForecastCreatedAt.
+6. Table:
+   Колонки:
+   - препарат;
+   - форма выпуска;
+   - категория;
+   - хранение;
+   - текущий остаток;
+   - стоимость запаса;
+   - дни покрытия;
+   - ABC;
+   - ROP;
+   - EOQ;
+   - риски;
+   - рекомендация;
+   - действие "Открыть".
+7. Responsive:
+   - на desktop таблица;
+   - на mobile допустимы карточки или горизонтальный scroll.
+8. Empty states:
+   - нет SKU;
+   - нет AI-прогноза;
+   - API ещё не подключён.
+
+Задача 6. Фильтрация и сортировка.
+Фильтрацию и сортировку можно сделать на клиенте по уже загруженным 20 SKU.
+
+Требования:
+- Не добавляй query params в URL, если это усложняет.
+- Не вызывай API на каждое изменение фильтра.
+- Сначала fetch all, затем filter/sort в памяти.
+- Search должен быть case-insensitive.
+- Если поле отсутствует или null, UI не должен падать.
+- Для отсутствующих ROP/EOQ показывай "—" или "AI не рассчитан".
+- Для отсутствующих рисков показывай нейтральное состояние "Нет прогноза".
+
+Задача 7. Навигация.
+- Каждая строка/карточка должна иметь ссылку на /sku/[id].
+- Используй next/link.
+- Не меняй страницу /sku/[id] в этой ветке.
+
+Задача 8. Не ломай сборку, если Data API ещё нет.
+Так как /api/sku может появиться после merge feature/data-api:
+- fetch должен иметь try/catch;
+- error state должен быть нормальным;
+- build не должен зависеть от доступности API;
+- не делай server-side fetch к /api/sku на build time.
+
+Задача 9. Проверка качества.
+Запусти:
+- npm run lint
+- npm run build
+
+Затем dev server:
+- npm run dev
+
+Ручная проверка:
+1. Открыть /login.
+2. Войти demo / demo12345.
+3. Перейти на /sku.
+4. Убедиться, что header содержит Dashboard, SKU, Methodology, Выйти.
+5. Убедиться, что catalog выглядит как готовый экран, даже если /api/sku пока не готов.
+6. Проверить поиск/фильтры/сортировку, если данные доступны.
+7. Проверить, что ссылки ведут на /sku/[id].
+8. Проверить, что / и /methodology не изменены.
+9. Проверить browser console: нет React/runtime errors.
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат npm run lint;
+- результат npm run build;
+- что /login/header не изменялись;
+- что app/api, lib, supabase, types, dashboard, detail и shared components не изменялись.
+
+Acceptance criteria:
+- /sku выглядит как полноценный SKU catalog screen.
+- Catalog UI использует SkuListResponse/SkuListItem из types/api.ts.
+- UI готов к подключению /api/sku.
+- Есть loading/error/empty/success states.
+- Есть search/filter/sort.
+- Есть переходы на /sku/[id].
+- Нет fake demo data в TypeScript.
+- Нет OpenRouter/Supabase вызовов из UI.
+- Header не изменён и содержит Dashboard, SKU, Methodology, Выйти.
+- /login не изменён.
+- app/api/* не изменялись.
+- lib/* не изменялись.
+- components/ui/* не изменялись.
+- components/dashboard/* не изменялись.
+- app/(protected)/page.tsx не изменялся.
+- app/(protected)/sku/[id]/page.tsx не изменялся.
+- npm run lint проходит.
+- npm run build проходит.
+````

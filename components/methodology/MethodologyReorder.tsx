@@ -43,8 +43,8 @@ export function MethodologyReorder(): ReactNode {
 
         <MethodologyCard
           title="Защитные проверки"
-          description="AI может ошибиться, поэтому сервер принимает только валидный structured JSON и отбрасывает невозможные значения."
-          badge="валидация"
+          description="AI может ошибиться, поэтому сервер принимает только валидный структурированный JSON и отбрасывает невозможные значения."
+          badge="проверка"
         >
           <MethodologyCheckList items={validationRules} />
         </MethodologyCard>

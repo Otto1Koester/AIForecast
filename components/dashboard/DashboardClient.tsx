@@ -33,7 +33,7 @@ async function loadDashboard(signal: AbortSignal): Promise<FetchState> {
       return {
         status: "error",
         kind: "unauthorized",
-        message: "Сессия истекла. Войдите снова, чтобы увидеть dashboard.",
+        message: "Сессия истекла. Войдите снова, чтобы увидеть главную.",
       };
     }
 
@@ -42,7 +42,7 @@ async function loadDashboard(signal: AbortSignal): Promise<FetchState> {
         status: "error",
         kind: "not-ready",
         message:
-          "Dashboard API ещё не подключён. Этот экран автоматически оживёт после деплоя /api/dashboard.",
+          "API главной ещё не подключён. Этот экран автоматически оживёт после деплоя /api/dashboard.",
       };
     }
 
@@ -103,10 +103,10 @@ export function DashboardClient() {
   if (state.status === "error") {
     const title =
       state.kind === "not-ready"
-        ? "Dashboard API ещё не подключён"
+        ? "API главной ещё не подключён"
         : state.kind === "unauthorized"
           ? "Нужна повторная авторизация"
-          : "Не удалось загрузить dashboard";
+          : "Не удалось загрузить главную";
 
     return (
       <div className="space-y-6">

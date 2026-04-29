@@ -8,9 +8,9 @@ import {
 } from "./MethodologySection";
 
 const cacheReasons = [
-  "OpenRouter не вызывается на каждый render страницы.",
-  "Dashboard, catalog и SKU detail читают один сохранённый forecast.",
-  "Кэш снижает стоимость демо и делает UI быстрым и стабильным.",
+  "OpenRouter не вызывается при каждом рендере страницы.",
+  "Главная, каталог и карточка SKU читают один сохранённый прогноз.",
+  "Кэш снижает стоимость демо и делает интерфейс быстрым и стабильным.",
   "История запусков прогноза помогает объяснить, когда и какой моделью был сделан расчёт.",
 ];
 
@@ -19,7 +19,7 @@ export function MethodologyForecasting(): ReactNode {
     <MethodologySection
       eyebrow="Прогноз"
       title="Как строится прогноз спроса"
-      description="AI возвращает прогноз потребности на 1, 3 и 6 месяцев, а вместе с числами объясняет сезонность, тренд, аномалии и confidence."
+      description="AI возвращает прогноз потребности на 1, 3 и 6 месяцев, а вместе с числами объясняет сезонность, тренд, аномалии и уровень уверенности."
     >
       <div className="grid gap-4 lg:grid-cols-3">
         {forecastHorizons.map((horizon) => (
@@ -45,7 +45,7 @@ export function MethodologyForecasting(): ReactNode {
 
         <MethodologyCard
           title="Почему результат сохраняется"
-          description="AI-расчёт является бизнес-событием, а не декоративным текстом. Поэтому результат сохраняется в Supabase и переиспользуется до ручного или batch-пересчёта."
+          description="AI-расчёт — это бизнес-событие, а не декоративный текст. Поэтому результат сохраняется в Supabase и переиспользуется до ручного или пакетного пересчёта."
           badge="кэш Supabase"
           className="border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/60 dark:bg-emerald-950/20"
         >

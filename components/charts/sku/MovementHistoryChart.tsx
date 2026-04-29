@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatUnitRu } from "@/lib/utils/format";
 import type { SkuMovementDto } from "@/types/api";
 
 const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -65,7 +66,7 @@ export function MovementHistoryChart({
         <Tooltip
           contentStyle={{ borderRadius: 8, fontSize: 12 }}
           formatter={(value: unknown, name: unknown) => [
-            `${formatNumber(value)} ${unit}`,
+            `${formatNumber(value)} ${formatUnitRu(unit)}`,
             String(name ?? ""),
           ]}
         />

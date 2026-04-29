@@ -57,7 +57,7 @@ export function SkuAiInsightsPanel({
           {executiveSummary ? (
             <div className="rounded-md border border-zinc-200 bg-zinc-50/50 p-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Executive summary
+                Краткое резюме
               </p>
               <p className="mt-1">{executiveSummary}</p>
             </div>

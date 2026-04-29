@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AbcBadge } from "@/components/ui/AbcBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import type { DashboardTopRiskSku } from "@/types/api";
@@ -13,7 +14,7 @@ const recommendationLabels: Record<string, string> = {
   accelerate_sales: "Ускорить продажи",
   write_off: "Списать",
   monitor: "Мониторить",
-  adjust_safety_stock: "Скорректировать safety stock",
+  adjust_safety_stock: "Скорректировать страховой запас",
 };
 
 const priorityStyles: Record<string, string> = {
@@ -29,7 +30,7 @@ export function DashboardTopRisks({ items }: DashboardTopRisksProps) {
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
         <div>
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            Top SKU по риску
+            Топ SKU по риску
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Позиции, на которые AI рекомендует обратить внимание в первую очередь.
@@ -73,9 +74,7 @@ export function DashboardTopRisks({ items }: DashboardTopRisksProps) {
                     </Link>
                   </td>
                   <td className="px-4 py-2">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                      {item.abcClass}
-                    </span>
+                    <AbcBadge value={item.abcClass} />
                   </td>
                   <td className="px-4 py-2 text-zinc-700 dark:text-zinc-300">
                     {item.daysCoverage != null ? `${item.daysCoverage} дн.` : "—"}

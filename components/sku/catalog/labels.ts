@@ -1,3 +1,4 @@
+import { formatUnitRu } from "@/lib/utils/format";
 import type { AiRecommendationAction, AiRecommendationPriority } from "@/types/ai";
 import type { StorageCondition } from "@/types/inventory";
 import type { RiskLevel } from "@/types/api";
@@ -104,7 +105,7 @@ export function formatStockWithUnit(
   if (value === null || value === undefined || Number.isNaN(value)) {
     return "—";
   }
-  return `${numberFormatter.format(Math.round(value))} ${unit}`;
+  return `${numberFormatter.format(Math.round(value))} ${formatUnitRu(unit)}`;
 }
 
 export function formatDate(value: string | null | undefined): string {

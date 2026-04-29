@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { EmptyState } from "@/components/ui/EmptyState";
+import { formatUnitRu } from "@/lib/utils/format";
 import type { AiRecommendation } from "@/types/ai";
 
 import { ACTION_LABELS, PRIORITY_LABELS, PRIORITY_TONE } from "./labels";
@@ -77,7 +78,7 @@ export function SkuRecommendationsPanel({
                       <div>
                         <dt className="uppercase tracking-wide">Объём</dt>
                         <dd className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                          {formatInteger(rec.suggestedQuantity)} {unit}
+                          {formatInteger(rec.suggestedQuantity)} {formatUnitRu(unit)}
                         </dd>
                       </div>
                     ) : null}

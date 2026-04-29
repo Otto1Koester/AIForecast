@@ -13,12 +13,18 @@ export default async function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-10">
       <section className="w-full max-w-md space-y-6">
-      <header className="space-y-2 text-center">
+      <header className="space-y-3 text-center">
+        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          Тестовое задание
+        </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Вход в AIForecast
+          AI-прогнозирование лекарственных средств
         </h1>
+        <p className="text-base font-medium text-zinc-700 dark:text-zinc-200">
+          Вход в AIForecast
+        </p>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Войдите под demo-пользователем, чтобы открыть защищённые разделы.
+          Войдите под демо-пользователем, чтобы открыть защищённые разделы.
         </p>
       </header>
 

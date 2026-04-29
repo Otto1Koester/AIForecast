@@ -8,7 +8,7 @@ export function MethodologyDataFlow(): ReactNode {
     <MethodologySection
       eyebrow="Поток данных"
       title="Как данные проходят через продукт"
-      description="AIForecast не строит отдельную витрину из поддельных runtime-данных. UI опирается на demo data в Supabase, API-контракты и сохранённый AI-результат."
+      description="AIForecast не строит отдельную витрину из поддельных данных в браузере. Интерфейс опирается на демо-данные в Supabase, контракты API и сохранённый AI-результат."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {dataFlowSteps.map((step, index) => (

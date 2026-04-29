@@ -9,17 +9,14 @@ import {
   Tooltip,
 } from "recharts";
 
+import { ABC_CHART_COLORS } from "@/components/ui/AbcBadge";
 import type { DashboardAbcItem } from "@/types/api";
 
 export type AbcChartProps = {
   items: DashboardAbcItem[];
 };
 
-const colorByClass: Record<DashboardAbcItem["abcClass"], string> = {
-  A: "#10b981",
-  B: "#f59e0b",
-  C: "#6366f1",
-};
+const colorByClass = ABC_CHART_COLORS;
 
 export function AbcChart({ items }: AbcChartProps) {
   const data = items.map((item) => ({

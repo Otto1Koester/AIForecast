@@ -13,7 +13,7 @@ export function DashboardForecastPanel({ points }: DashboardForecastPanelProps) 
 
   return (
     <ChartContainer
-      title="Forecast vs Fact"
+      title="Прогноз и факт"
       description="Сравнение фактического потребления и AI-прогноза по периодам."
       footer={
         hasForecast
@@ -23,7 +23,7 @@ export function DashboardForecastPanel({ points }: DashboardForecastPanelProps) 
     >
       {points.length === 0 || (!hasForecast && !hasFact) ? (
         <EmptyState
-          title="Forecast vs Fact ещё не готов"
+          title="График «прогноз и факт» ещё не готов"
           description="Запустите AI-прогноз в карточке любого SKU — здесь появится сводный график."
         />
       ) : (

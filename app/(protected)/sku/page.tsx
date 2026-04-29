@@ -14,7 +14,7 @@ export default function SkuCatalogPage() {
         <p className="max-w-3xl text-sm leading-6 text-zinc-500 dark:text-zinc-400">
           Данные о SKU и текущих запасах загружаются из Supabase. AI-метрики
           (ROP, EOQ, риски, рекомендации) появляются после расчёта прогноза в
-          AI Engine.
+          AI-движке.
         </p>
       </header>
 

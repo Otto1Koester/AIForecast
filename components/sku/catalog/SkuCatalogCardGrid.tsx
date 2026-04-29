@@ -1,6 +1,9 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
+"use client";
 
+import { useRouter } from "next/navigation";
+import type { KeyboardEvent, ReactNode } from "react";
+
+import { AbcBadge } from "@/components/ui/AbcBadge";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import type { SkuListItem } from "@/types/api";
 import type { StorageCondition } from "@/types/inventory";
@@ -22,8 +25,8 @@ type SkuCatalogCardGridProps = {
 function RiskRow({ item }: { item: SkuListItem }): ReactNode {
   const blocks: Array<{ label: string; level: SkuListItem["stockoutRisk"] }> = [
     { label: "Дефицит", level: item.stockoutRisk },
-    { label: "Затоварка", level: item.overstockRisk },
-    { label: "Срок", level: item.expiryRisk },
+    { label: "Затоваривание", level: item.overstockRisk },
+    { label: "Срок годности", level: item.expiryRisk },
   ];
 
   return (
@@ -51,30 +54,44 @@ function RiskRow({ item }: { item: SkuListItem }): ReactNode {
 export function SkuCatalogCardGrid({
   items,
 }: SkuCatalogCardGridProps): ReactNode {
+  const router = useRouter();
+
+  function navigate(skuId: string) {
+    router.push(`/sku/${skuId}`);
+  }
+
+  function handleKeyDown(
+    event: KeyboardEvent<HTMLLIElement>,
+    skuId: string,
+  ) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      navigate(skuId);
+    }
+  }
+
   return (
     <ul className="grid gap-3">
       {items.map((item) => (
         <li
           key={item.id}
-          className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+          role="link"
+          tabIndex={0}
+          onClick={() => navigate(item.id)}
+          onKeyDown={(event) => handleKeyDown(event, item.id)}
+          aria-label={`Открыть карточку ${item.name}`}
+          className="cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900/60 dark:focus:bg-zinc-900/60"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-0.5">
-              <Link
-                href={`/sku/${item.id}`}
-                className="text-base font-semibold text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50"
-              >
+              <p className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
                 {item.name}
-              </Link>
+              </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {item.dosageForm} · {item.category}
               </p>
             </div>
-            {item.abcClass ? (
-              <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
-                ABC {item.abcClass}
-              </span>
-            ) : null}
+            <AbcBadge value={item.abcClass} prefix="ABC" />
           </div>
 
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
@@ -132,15 +149,6 @@ export function SkuCatalogCardGrid({
                 AI-рекомендация ещё не рассчитана
               </p>
             )}
-          </div>
-
-          <div className="mt-3 flex justify-end">
-            <Link
-              href={`/sku/${item.id}`}
-              className="inline-flex items-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              Открыть карточку
-            </Link>
           </div>
         </li>
       ))}

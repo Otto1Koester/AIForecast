@@ -92,44 +92,46 @@ function createKpis(
   return [
     {
       id: "total-sku",
-      title: "Total SKU",
+      title: "Всего SKU",
       value: skus.length,
       tone: "neutral",
     },
     {
       id: "stockout-risk",
-      title: "Stockout risk",
+      title: "Риск дефицита",
       value: stockoutRiskCount,
-      description: "High or critical risk from latest AI forecasts.",
+      description: "Высокий или критический риск по последним AI-прогнозам.",
       tone: stockoutRiskCount > 0 ? "danger" : "success",
     },
     {
       id: "overstock-risk",
-      title: "Overstock risk",
+      title: "Риск затоваривания",
       value: overstockRiskCount,
-      description: "High or critical risk from latest AI forecasts.",
+      description: "Высокий или критический риск по последним AI-прогнозам.",
       tone: overstockRiskCount > 0 ? "warning" : "success",
     },
     {
       id: "expiry-risk",
-      title: "Expiry risk",
+      title: "Риск срока годности",
       value: expiryRiskCount,
-      description: "AI risk when available, otherwise near-expiry lot reference.",
+      description:
+        "AI-риск при наличии прогноза, иначе справочная оценка по партиям с близким сроком годности.",
       tone: expiryRiskCount > 0 ? "warning" : "success",
     },
     {
       id: "inventory-value",
-      title: "Inventory value",
+      title: "Стоимость запасов",
       value: roundTo(totalInventoryValue),
       unit: "USD",
       tone: "neutral",
     },
     {
       id: "potential-write-off",
-      title: "Potential write-off",
+      title: "Потенциальное списание",
       value: roundTo(potentialWriteOffValue),
       unit: "USD",
-      description: "Reference value in lots expiring within 180 days.",
+      description:
+        "Справочная стоимость партий со сроком годности в ближайшие 180 дней.",
       tone: potentialWriteOffValue > 0 ? "warning" : "success",
     },
   ];
@@ -151,19 +153,19 @@ function createAlerts(
       {
         id: "stockout",
         level: toRiskLevel(forecast.stockout_risk),
-        title: "Stockout risk",
+        title: "Риск дефицита",
         message: forecast.analysis.risks.stockout.explanation,
       },
       {
         id: "overstock",
         level: toRiskLevel(forecast.overstock_risk),
-        title: "Overstock risk",
+        title: "Риск затоваривания",
         message: forecast.analysis.risks.overstock.explanation,
       },
       {
         id: "expiry",
         level: toRiskLevel(forecast.expiry_risk),
-        title: "Expiry risk",
+        title: "Риск срока годности",
         message: forecast.analysis.risks.expiry.explanation,
       },
     ];
@@ -265,7 +267,7 @@ function createReferenceRecommendation(
     action: "monitor",
     priority: riskToPriority(level),
     reasoning:
-      "AI forecast is not generated yet; this is a reference watch item based on stock coverage or lot expiry.",
+      "AI-прогноз ещё не рассчитан; это справочная позиция для контроля на основе дней покрытия или срока годности партии.",
   };
 }
 

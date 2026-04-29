@@ -33,7 +33,7 @@ export function SkuForecastPanel({
   return (
     <section className="space-y-4">
       <ChartContainer
-        title="Forecast vs факт"
+        title="Прогноз и факт"
         description="Сравнение фактического расхода с AI-прогнозом по месяцам."
       >
         {!hasFact && !hasForecast ? (

@@ -6,7 +6,7 @@ import { MethodologyCard, MethodologySection } from "./MethodologySection";
 export function MethodologyRoadmap(): ReactNode {
   return (
     <MethodologySection
-      eyebrow="После MVP"
+      eyebrow="После демо"
       title="Как развивать систему дальше"
       description="После тестового задания AIForecast можно расширить от демо-сервиса до полноценного контура управления запасами и закупками."
     >

@@ -2028,3 +2028,239 @@ Acceptance criteria:
 - npm run lint проходит.
 - npm run build проходит.
 ````
+
+## Prompt 30 — Запуск UI Dashboard после AI engine
+````text
+feature/ai-engine запущена давай следующий шаг в параллель
+````
+
+## Prompt 31 — Claude: Dashboard UI screen
+````text
+Ты работаешь в проекте AIForecast, branch feature/ui-dashboard, worktree AIForecast-ui-dashboard.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Уже завершены и merged в feature/mvp:
+  - Next.js app;
+  - Supabase schema и demo data;
+  - Auth;
+  - UI/API contracts.
+- Сейчас параллельно работают:
+  - feature/data-api: реализует /api/dashboard, /api/sku, /api/sku/[id]
+  - feature/ai-engine: реализует OpenRouter AI endpoints
+- Поэтому в этой ветке НЕ трогай app/api/*, lib/*, types/* и shared components.
+- Эта ветка отвечает только за визуальный dashboard screen.
+- Header уже реализован в protected layout и содержит Dashboard, SKU, Methodology, Выйти. Не меняй header.
+- /login остаётся отдельной страницей без protected header. Не меняй login.
+
+Цель:
+Собрать красивый, демонстрационно убедительный dashboard на странице /, который после merge Data API сможет читать DashboardResponse из /api/dashboard.
+
+Dashboard должен показать ценность продукта за 30 секунд:
+- KPI;
+- AI alerts;
+- ABC-анализ;
+- дни покрытия;
+- forecast vs fact;
+- top risk SKU;
+- AI status / last forecast info.
+
+Разрешено менять:
+- app/(protected)/page.tsx
+- components/dashboard/*
+- components/charts/dashboard/*
+
+Разрешено использовать, но НЕ менять:
+- components/ui/KpiCard.tsx
+- components/ui/RiskBadge.tsx
+- components/ui/EmptyState.tsx
+- components/ui/LoadingState.tsx
+- components/ui/ErrorState.tsx
+- components/charts/ChartContainer.tsx
+- types/api.ts
+- types/ai.ts
+- types/inventory.ts
+
+Запрещено менять:
+- app/(protected)/layout.tsx
+- app/login/page.tsx
+- app/(protected)/sku/*
+- app/(protected)/methodology/page.tsx
+- app/api/*
+- lib/*
+- supabase/*
+- components/ui/*
+- components/charts/ChartContainer.tsx
+- components/auth/*
+- components/layout/*
+- components/sku/*
+- types/*
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- package.json
+- package-lock.json
+- .env.example
+- .env.local
+
+Задача 1. Изучи контракты и shared components:
+- types/api.ts
+- components/ui/KpiCard.tsx
+- components/ui/RiskBadge.tsx
+- components/ui/EmptyState.tsx
+- components/ui/LoadingState.tsx
+- components/ui/ErrorState.tsx
+- components/charts/ChartContainer.tsx
+- app/(protected)/layout.tsx только чтобы понять header, но не меняй его.
+
+Задача 2. Реализуй dashboard page.
+Файл:
+- app/(protected)/page.tsx
+
+Страница должна:
+- быть защищённой через существующий protected layout;
+- не реализовывать auth самостоятельно;
+- рендерить dashboard UI;
+- использовать компоненты из components/dashboard/*;
+- не обращаться к Supabase напрямую;
+- не вызывать OpenRouter напрямую;
+- получать данные только через /api/dashboard.
+
+Важно:
+Так как feature/data-api может быть ещё не merged в эту ветку, /api/dashboard может временно отвечать 404 в этой worktree. Поэтому UI должен корректно показывать error/empty state, но не должен содержать fake business data в коде.
+
+Задача 3. Создай dashboard client component.
+Создай, например:
+- components/dashboard/DashboardClient.tsx
+
+Требования:
+- Это client component.
+- Делает fetch("/api/dashboard") после mount.
+- Использует credentials same-origin по умолчанию.
+- Типизирует ответ как DashboardResponse из types/api.ts.
+- Состояния:
+  - loading;
+  - error;
+  - empty/no AI forecast yet;
+  - success.
+- Если endpoint вернул 401, показать понятное сообщение, но не реализовывать logout/auth.
+- Если endpoint пока 404, показать аккуратный message: "Dashboard API ещё не подключён".
+- Не добавляй моковые SKU, моковые AI forecasts или fake business data.
+- Не пиши demo data в TypeScript.
+- Никаких OpenRouter вызовов из UI.
+
+Задача 4. Создай dashboard sections.
+Создай файлы на своё усмотрение внутри components/dashboard, например:
+- DashboardHeader.tsx
+- DashboardKpiGrid.tsx
+- DashboardAlerts.tsx
+- DashboardAbcPanel.tsx
+- DashboardCoveragePanel.tsx
+- DashboardForecastPanel.tsx
+- DashboardTopRisks.tsx
+- DashboardAiStatus.tsx
+
+Требования:
+- Используй DashboardResponse и дочерние DTO из types/api.ts.
+- Используй KpiCard для KPI.
+- Используй RiskBadge для risks.
+- Используй EmptyState, LoadingState, ErrorState.
+- Используй ChartContainer для графиков.
+- Для графиков можно использовать Recharts, уже установленный в проекте.
+- Графики должны быть визуально аккуратными:
+  - ABC: PieChart или BarChart;
+  - days coverage: BarChart;
+  - forecast vs fact: LineChart или ComposedChart.
+- Не задавай тяжёлую кастомную графическую систему.
+- Не добавляй новые зависимости.
+- Не меняй app/globals.css.
+- Используй Tailwind classes локально.
+
+Задача 5. UX и визуальная иерархия.
+Dashboard должен выглядеть как бизнес-продукт, а не placeholder.
+
+Обязательные блоки:
+1. Hero/header внутри страницы:
+   - title: "Dashboard"
+   - subtitle: "AI-прогнозирование запасов лекарственных средств"
+   - короткое пояснение, что данные загружаются из Supabase, а AI-анализ сохраняется после OpenRouter-прогноза.
+2. KPI grid:
+   - total SKU;
+   - stockout risk;
+   - overstock risk;
+   - expiry risk;
+   - inventory value или potential write-off.
+3. AI alerts:
+   - список alert cards;
+   - если alerts пустые, EmptyState с текстом "AI-алерты появятся после расчёта прогноза".
+4. ABC-анализ:
+   - график;
+   - краткое объяснение A/B/C.
+5. Days coverage:
+   - график или список SKU по покрытию.
+6. Forecast vs fact:
+   - график;
+   - если forecast ещё не рассчитан, честный empty state.
+7. Top risk SKU:
+   - компактный список с risk badge.
+8. AI status:
+   - модель;
+   - дата последнего расчёта;
+   - количество SKU с forecast;
+   - состояние "not generated yet", если прогнозы ещё не рассчитаны.
+
+Задача 6. Кнопки.
+Можно добавить неактивную/информационную кнопку или link:
+- "Перейти к каталогу SKU" → /sku
+- "Открыть методологию" → /methodology
+
+Не добавляй кнопку пересчёта AI на dashboard в этой ветке, чтобы не конфликтовать с AI engine. Пересчёт будет на SKU detail.
+
+Задача 7. Не ломай сборку, если Data API ещё нет.
+Так как /api/dashboard может появиться после merge feature/data-api:
+- fetch должен иметь try/catch;
+- error state должен быть нормальным;
+- build не должен зависеть от доступности API;
+- не делай server-side fetch к /api/dashboard на build time.
+
+Задача 8. Проверка качества.
+Запусти:
+- npm run lint
+- npm run build
+
+Затем dev server:
+- npm run dev
+
+Ручная проверка:
+1. Открыть /login.
+2. Войти demo / demo12345.
+3. Перейти на /.
+4. Убедиться, что header содержит Dashboard, SKU, Methodology, Выйти.
+5. Убедиться, что dashboard выглядит как готовый экран, даже если /api/dashboard пока не готов.
+6. Проверить, что /sku и /methodology не изменены.
+7. Проверить browser console: нет React/runtime errors.
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат npm run lint;
+- результат npm run build;
+- что /login/header не изменялись;
+- что app/api, lib, supabase, types и shared components не изменялись.
+
+Acceptance criteria:
+- / выглядит как полноценный dashboard screen.
+- Dashboard UI использует DashboardResponse из types/api.ts.
+- UI готов к подключению /api/dashboard.
+- Есть loading/error/empty/success states.
+- Нет fake demo data в TypeScript.
+- Нет OpenRouter/Supabase вызовов из UI.
+- Header не изменён и содержит Dashboard, SKU, Methodology, Выйти.
+- /login не изменён.
+- app/api/* не изменялись.
+- lib/* не изменялись.
+- components/ui/* не изменялись.
+- npm run lint проходит.
+- npm run build проходит.
+````

@@ -3025,3 +3025,377 @@ Acceptance criteria:
 - npm run lint проходит.
 - npm run build проходит.
 ````
+
+## Prompt 38 — Завершение UI Methodology
+````text
+Завершила создание и смержила feature/ui-methodology. Теперь давай перейдем к генерации документации.
+````
+
+## Prompt 39 — Генерация документации
+````text
+Ты работаешь в проекте AIForecast, branch feature/docs.
+
+Контекст:
+- Это MVP веб-сервиса AIForecast для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Все feature-ветки уже вмерджены в текущую ветку feature/docs:
+  - Auth;
+  - Supabase schema/demo data;
+  - UI/API contracts;
+  - Data API;
+  - AI forecast engine;
+  - UI Dashboard;
+  - UI SKU Catalog;
+  - UI SKU Detail;
+  - UI Methodology.
+- Методология была вмерджена поздно, поэтому README.md нужно собрать заново с учётом уже фактически готового приложения.
+- PROMPTS.md НЕ МЕНЯТЬ.
+- Production URL может быть ещё неизвестен. Если URL неизвестен, оставь placeholder: TBD после Vercel deploy.
+
+Главная цель:
+Актуализировать только README.md как финальный отчётный документ для сдачи тестового задания. README должен описывать готовый продукт, архитектуру, стек, AI-подход, данные, запуск, Supabase setup, OpenRouter setup, demo flow, деплой и ограничения MVP.
+
+Разрешено менять только:
+- README.md
+
+Запрещено менять:
+- PROMPTS.md
+- PROJECT_PLAN.md
+- TASK_DESCRIPTION.md
+- ENVIROMENT.md
+- app/**
+- components/**
+- lib/**
+- types/**
+- supabase/**
+- package.json
+- package-lock.json
+- next.config.ts
+- proxy.ts
+- .env.example
+- .env.local
+- AGENTS.md
+- CLAUDE.md
+- .claude/
+- любые production-code файлы
+
+Перед написанием README изучи, но не меняй:
+- PROJECT_PLAN.md
+- TASK_DESCRIPTION.md
+- ENVIROMENT.md
+- package.json
+- app/**
+- app/api/**
+- components/**
+- lib/ai/**
+- lib/dashboard/**
+- lib/sku/**
+- types/api.ts
+- types/ai.ts
+- types/inventory.ts
+- supabase/migrations/001_init_schema.sql
+- supabase/seed.sql
+
+Важно:
+- Не меняй файлы, которые читаешь.
+- Не добавляй новые зависимости.
+- Не меняй production code.
+- Не меняй PROMPTS.md.
+- Не меняй env-файлы.
+- README.md должен быть на русском языке.
+
+Структура README.md:
+
+1. Название проекта
+
+AIForecast — AI-прогнозирование запасов лекарственных средств
+
+2. Краткое описание
+
+Опиши, что это MVP веб-сервиса для фармацевтической компании полного цикла, который помогает:
+- прогнозировать потребность;
+- выявлять риски дефицита;
+- выявлять риски затоваривания;
+- учитывать сроки годности;
+- рассчитывать ROP/EOQ;
+- получать AI-рекомендации по действиям.
+
+3. Ссылки
+
+Добавь:
+- GitHub repository: https://github.com/Otto1Koester/AIForecast
+- Production URL: TBD после Vercel deploy
+- Demo login:
+  - username: demo
+  - password: demo12345
+
+Если в проекте уже есть production URL в env/docs, используй его. Если нет — оставь placeholder.
+
+4. Основные возможности
+
+Опиши готовые возможности:
+- простая demo-авторизация;
+- защищённые страницы;
+- Dashboard;
+- SKU catalog;
+- SKU detail;
+- Methodology;
+- Supabase demo data;
+- Data API;
+- OpenRouter AI forecast;
+- AI forecast caching в Supabase;
+- ручной пересчёт AI-прогноза на карточке SKU.
+
+5. Стек
+
+Перечисли:
+- Next.js App Router;
+- React;
+- TypeScript;
+- Tailwind CSS;
+- Recharts;
+- Supabase Cloud Postgres;
+- OpenRouter API;
+- Vercel;
+- GitHub.
+
+6. Архитектура
+
+Добавь текстовую схему:
+
+User
+→ Next.js App Router UI
+→ Next.js Route Handlers in app/api
+→ Supabase Cloud Postgres
+→ OpenRouter AI
+→ ai_forecasts / ai_forecast_runs
+→ Dashboard / Catalog / SKU Detail
+
+Объясни:
+- отдельного backend-сервиса нет;
+- backend живёт внутри app/api;
+- Supabase service role key используется только server-side;
+- OpenRouter вызывается только server-side;
+- UI не получает секреты.
+
+7. Страницы приложения
+
+Опиши:
+- /login — demo auth;
+- / — dashboard;
+- /sku — catalog;
+- /sku/[id] — detail card;
+- /methodology — объяснение подхода.
+
+Для каждой страницы добавь 2–4 предложения о том, что она показывает.
+
+8. API endpoints
+
+Опиши:
+- POST /api/auth/login;
+- POST /api/auth/logout;
+- GET /api/auth/me;
+- GET /api/dashboard;
+- GET /api/sku;
+- GET /api/sku/[id];
+- POST /api/ai/forecast/[skuId];
+- POST /api/ai/forecast/batch.
+
+9. Данные и Supabase
+
+Опиши таблицы:
+- app_users;
+- sku_items;
+- inventory_lots;
+- inventory_movements;
+- ai_forecasts;
+- ai_forecast_runs.
+
+Укажи:
+- данные синтетические;
+- хранятся в Supabase Cloud;
+- локальный Supabase через Docker не используется;
+- SQL schema и seed лежат в репозитории;
+- demo dataset закрывает разные сценарии: дефицит, затоваривание, сезонность, аномалии, срок годности.
+
+10. AI-подход
+
+Объясни:
+- AI является forecast/decision engine;
+- OpenRouter получает structured SKU context;
+- AI возвращает structured JSON;
+- результат валидируется;
+- результат сохраняется в Supabase;
+- UI читает сохранённый forecast;
+- AI не вызывается на каждый render;
+- ручной пересчёт делается кнопкой на карточке SKU.
+
+Отдельно перечисли, что AI возвращает:
+- forecast 1/3/6 месяцев;
+- сезонность;
+- тренд;
+- аномалии;
+- ROP;
+- EOQ;
+- риски;
+- рекомендации;
+- confidence;
+- executive summary.
+
+11. Environment variables
+
+Добавь блок:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+JWT_SECRET=
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=http://localhost:3000
+OPENROUTER_APP_TITLE=AIForecast
+AI_BATCH_LIMIT=5
+```
+
+Укажи:
+- .env.local не коммитить;
+- service role key не должен попадать в browser;
+- OpenRouter key не должен попадать в browser;
+- env values нужно добавить и локально, и в Vercel.
+
+12. Локальный запуск
+
+Добавь команды для Windows PowerShell:
+
+```powershell
+npm install
+Copy-Item .env.example .env.local
+npm run dev
+```
+
+Укажи, что после копирования .env.local нужно заполнить Supabase/OpenRouter/JWT значения.
+
+13. Supabase setup
+
+Опиши:
+1. создать Supabase Cloud project;
+2. открыть SQL Editor;
+3. выполнить supabase/migrations/001_init_schema.sql;
+4. выполнить supabase/seed.sql;
+5. проверить demo user и demo data;
+6. заполнить env variables.
+
+Добавь проверочный SQL:
+
+```sql
+select
+  (select count(*) from app_users) as app_users,
+  (select count(*) from sku_items) as sku_items,
+  (select count(*) from inventory_lots) as inventory_lots,
+  (select count(*) from inventory_movements) as inventory_movements,
+  (select count(*) from ai_forecasts) as ai_forecasts,
+  (select count(*) from ai_forecast_runs) as ai_forecast_runs;
+```
+
+14. OpenRouter setup
+
+Опиши:
+- нужен OPENROUTER_API_KEY;
+- модель задаётся через OPENROUTER_MODEL;
+- по умолчанию используется openai/gpt-4o-mini;
+- AI forecast вызывается через server-side endpoint;
+- batch endpoint можно использовать для подготовки demo data.
+
+15. Демо-сценарий
+
+Опиши пошагово:
+1. открыть приложение;
+2. войти demo / demo12345;
+3. посмотреть Dashboard;
+4. открыть SKU catalog;
+5. применить фильтры/сортировку;
+6. открыть SKU detail;
+7. посмотреть партии, историю движения, forecast vs fact;
+8. нажать "Пересчитать AI-прогноз";
+9. показать AI forecast 1/3/6, ROP/EOQ, риски и рекомендации;
+10. открыть Methodology.
+
+16. Деплой на Vercel
+
+Опиши:
+1. подключить GitHub repo;
+2. выбрать проект;
+3. добавить env variables;
+4. выполнить deploy;
+5. проверить /login, /, /sku, /sku/[id], /methodology;
+6. проверить AI recalculation;
+7. заменить placeholder Production URL в README.
+
+17. Команды качества
+
+Добавь:
+
+```powershell
+npm run lint
+npm run build
+```
+
+18. Ограничения MVP
+
+Укажи:
+- данные синтетические;
+- auth демонстрационная;
+- ERP/WMS/MES не подключены;
+- локальный Supabase через Docker не используется;
+- AI-рекомендации требуют бизнес-валидации перед production;
+- приложение демонстрирует подход, а не промышленную ERP-систему.
+
+19. Принятые решения
+
+Кратко перечисли:
+- Next.js full-stack без отдельного backend;
+- Supabase Cloud;
+- OpenRouter;
+- structured JSON;
+- AI forecast caching;
+- git worktree для параллельной разработки;
+- Vercel deploy.
+
+20. Структура проекта
+
+Добавь краткое дерево:
+- app;
+- components;
+- lib;
+- types;
+- supabase;
+- README.md;
+- PROMPTS.md;
+- PROJECT_PLAN.md.
+
+Финальная проверка:
+1. После правки README.md выполни:
+   - git diff --stat
+   - git diff --name-only
+2. Убедись, что изменён только README.md.
+3. Если изменился PROMPTS.md — откати его.
+4. Если изменился production code — откати его.
+5. Проверь, что .env.local не отслеживается.
+6. Можно запустить npm run lint и npm run build, но если менялся только README.md, это необязательно.
+
+После завершения покажи:
+- какие разделы README обновлены;
+- git diff --stat;
+- git diff --name-only;
+- подтверждение, что изменён только README.md;
+- подтверждение, что PROMPTS.md не менялся;
+- подтверждение, что production code не менялся;
+- подтверждение, что .env.local не попал в git.
+
+Acceptance criteria:
+- README.md актуален с учётом всех merged features, включая methodology.
+- README.md готов для интервью и сдачи тестового задания.
+- PROMPTS.md не изменён.
+- Production code не изменён.
+- Production URL оставлен как placeholder, если деплоя ещё нет.
+````

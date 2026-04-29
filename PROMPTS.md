@@ -919,9 +919,289 @@ Codex → feature/ui-methodology / feature/docs
 Что скажешь? Если согласен, то пришли обновленный файл PROJECT_PLAN_UPDATED.md.
 ````
 
-## Prompt 22 — Завершение этапа Auth и обновление PROJECT_PLAN.md
+## Prompt 22 — Завершение Auth и переход к UI/API contracts
 ````text
 Этап 3 — Auth. Завершен, можем переходить дальше.
 
 Также я обновила документ PROJECT_PLAN.md, в нем были внесены корректировки по организации параллельной работы агентов. Прочитай документ и строй дальнейшие шаги в соответствии с актуализированной версией.
+
+Также учти что в header я оставила кнопку Dashboard вместе с SKU и Methodology. И учти что следующий номер промпта в PROMPTS.md будет 22.
+````
+
+## Prompt 23 — Cursor: UI/API contracts и shared UI components
+````text
+Ты работаешь в проекте AIForecast, branch feature/ui-contracts, worktree AIForecast-ui-contracts.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Этапы 1–3 уже завершены: Next.js app, Supabase schema/demo data и Auth.
+- Auth flow уже работает.
+- Header авторизованной части должен содержать Dashboard, SKU, Methodology и кнопку Выйти.
+- Dashboard остаётся ссылкой на /.
+- /login остаётся отдельной страницей без общего protected header.
+- Сейчас выполняется только Этап 4A: UI/API contracts.
+- Цель этапа — зафиксировать DTO и shared UI components перед параллельной разработкой Data API, AI engine и UI-экранов.
+
+Главная задача:
+Создать стабильные общие контракты данных и минимальный набор shared UI components, чтобы следующие ветки могли работать параллельно без конфликтов.
+
+Разрешено менять:
+- types/api.ts
+- components/ui/KpiCard.tsx
+- components/ui/RiskBadge.tsx
+- components/ui/EmptyState.tsx
+- components/ui/LoadingState.tsx
+- components/ui/ErrorState.tsx
+- components/charts/ChartContainer.tsx
+- components/ui/index.ts, если считаешь полезным
+- components/charts/index.ts, если считаешь полезным
+
+Можно только читать, но не менять без необходимости:
+- types/inventory.ts
+- types/ai.ts
+- app/(protected)/layout.tsx
+
+Запрещено менять:
+- app/api/*
+- lib/auth/*
+- lib/supabase/*
+- lib/ai/*
+- lib/dashboard/*
+- lib/sku/*
+- supabase/*
+- app/login/page.tsx
+- app/(protected)/page.tsx
+- app/(protected)/sku/page.tsx
+- app/(protected)/sku/[id]/page.tsx
+- app/(protected)/methodology/page.tsx
+- components/dashboard/*
+- components/sku/*
+- components/auth/*
+- components/layout/*
+- app/globals.css
+- package.json
+- package-lock.json
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- .env.example
+- .env.local
+
+Задача 1. Создай types/api.ts.
+
+Перед созданием:
+- Изучи существующие types/inventory.ts и types/ai.ts.
+- Переиспользуй существующие типы через import type, если они уже есть.
+- Не дублируй AiForecastAnalysis, SkuItem, InventoryLot, InventoryMovement, если они уже описаны.
+- Не ломай существующие типы.
+
+В types/api.ts нужно описать DTO для будущих API endpoints:
+
+1. Общие типы:
+- ApiErrorResponse
+- RiskLevel: 'low' | 'medium' | 'high' | 'critical'
+- PriorityLevel: 'low' | 'medium' | 'high' | 'urgent'
+- AbcClass: 'A' | 'B' | 'C'
+- TrendDirection: 'declining' | 'stable' | 'growing'
+- RiskSummary
+- LatestAiForecastSummary
+- RecommendationSummary
+
+2. Dashboard DTO:
+- DashboardResponse
+- DashboardKpi
+- DashboardAlert
+- DashboardAbcItem
+- DashboardCoverageItem
+- DashboardForecastVsFactPoint
+- DashboardTopRiskSku
+
+DashboardResponse должен покрывать будущие блоки:
+- KPI cards;
+- AI alerts;
+- ABC-анализ;
+- дни покрытия;
+- forecast vs fact;
+- top risk SKU;
+- AI status / last forecast info.
+
+3. SKU catalog DTO:
+- SkuListResponse
+- SkuListItem
+- SkuListMeta
+- SkuCatalogFiltersState, если полезно для UI.
+
+SkuListItem должен покрывать:
+- id;
+- name;
+- dosageForm;
+- category;
+- storageCondition;
+- shelfLifeDays;
+- currentStock;
+- unit;
+- unitCost;
+- inventoryValue;
+- daysCoverage;
+- abcClass;
+- rop;
+- eoq;
+- stockoutRisk;
+- overstockRisk;
+- expiryRisk;
+- primaryRecommendation;
+- latestForecastCreatedAt.
+
+4. SKU detail DTO:
+- SkuDetailResponse
+- SkuDetailHeader
+- SkuLotDto
+- SkuMovementDto
+- SkuDetailMetric
+- SkuForecastVsFactPoint
+
+SkuDetailResponse должен покрывать:
+- паспорт SKU;
+- партии;
+- историю движения;
+- forecast vs fact;
+- latest AI forecast;
+- ROP/EOQ;
+- risks;
+- recommendations;
+- technical AI metadata.
+
+5. AI action DTO:
+- AiRecalculateResponse
+- AiBatchForecastResponse
+- AiBatchForecastItem
+
+Требования к types/api.ts:
+- Экспортируй все DTO.
+- Используй понятные имена.
+- Не добавляй runtime-код.
+- Не импортируй React.
+- Не импортируй server-only модули.
+- Не используй Supabase client.
+- Типы должны быть удобны и для Data API, и для UI.
+
+Задача 2. Создай shared UI components.
+
+Создай компоненты:
+
+1. components/ui/KpiCard.tsx
+Назначение:
+- карточка KPI для dashboard и detail pages.
+
+Props:
+- title: string
+- value: string | number
+- description?: string
+- trendLabel?: string
+- tone?: 'neutral' | 'success' | 'warning' | 'danger'
+- className?: string
+
+Требования:
+- простой server-safe React component;
+- без use client, если не нужен;
+- аккуратный Tailwind;
+- не зависит от API fetch.
+
+2. components/ui/RiskBadge.tsx
+Назначение:
+- отображать risk level.
+
+Props:
+- level: RiskLevel
+- label?: string
+- className?: string
+
+Требования:
+- импортируй RiskLevel из types/api.ts;
+- подписи по умолчанию:
+  - low: Низкий
+  - medium: Средний
+  - high: Высокий
+  - critical: Критический
+- визуально различай уровни через Tailwind classes;
+- не добавляй внешние зависимости.
+
+3. components/ui/EmptyState.tsx
+Props:
+- title: string
+- description?: string
+- action?: React.ReactNode
+- className?: string
+
+4. components/ui/LoadingState.tsx
+Props:
+- title?: string
+- description?: string
+- className?: string
+
+5. components/ui/ErrorState.tsx
+Props:
+- title?: string
+- description?: string
+- action?: React.ReactNode
+- className?: string
+
+6. components/charts/ChartContainer.tsx
+Назначение:
+- общий контейнер для будущих Recharts-графиков.
+
+Props:
+- title: string
+- description?: string
+- children: React.ReactNode
+- footer?: React.ReactNode
+- className?: string
+
+Требования:
+- не добавляй сами графики на этом этапе;
+- только общий wrapper с заголовком, описанием и областью для children;
+- не используй browser-only API.
+
+Задача 3. Экспорты.
+Если в проекте нет index.ts — можешь создать:
+- components/ui/index.ts
+- components/charts/index.ts
+
+Но только если это не усложнит импорты. Не меняй существующие страницы ради этих экспортов.
+
+Задача 4. Не меняй текущий Auth/header UX.
+Проверь, что:
+- Dashboard остаётся в header.
+- SKU остаётся в header.
+- Methodology остаётся в header.
+- Выйти остаётся в header.
+- /login остаётся без общего header.
+Но если для проверки нужно только прочитать файлы — не меняй их.
+
+Задача 5. Проверка качества.
+Запусти:
+- npm run lint
+- npm run build
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат lint/build;
+- подтверждение, что не изменялись запрещённые файлы.
+
+Acceptance criteria:
+- types/api.ts создан и экспортирует DTO для dashboard, SKU catalog, SKU detail и AI actions.
+- Shared components созданы:
+  - KpiCard
+  - RiskBadge
+  - EmptyState
+  - LoadingState
+  - ErrorState
+  - ChartContainer
+- npm run lint проходит.
+- npm run build проходит.
+- Нет изменений app/api, lib/auth, lib/ai, supabase, production pages и документации.
+- Header с Dashboard не изменён.
+- Реальная Data API и AI engine не реализованы на этом этапе.
 ````

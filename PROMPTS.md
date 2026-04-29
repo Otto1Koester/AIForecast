@@ -2795,3 +2795,233 @@ Acceptance criteria:
 - npm run lint проходит.
 - npm run build проходит.
 ````
+
+## Prompt 36 — Запуск methodology в параллельной фазе
+````text
+Запустила на выполнение feature/ui-sku-detail. Давай следующий шаг в параллель.
+````
+
+## Prompt 37 — Codex: UI Methodology page
+````text
+Ты работаешь в проекте AIForecast, branch feature/ui-methodology, worktree AIForecast-ui-methodology.
+
+Контекст проекта:
+- Это MVP веб-сервиса для AI-прогнозирования запасов лекарственных средств.
+- Следуй актуальному PROJECT_PLAN.md.
+- Уже завершены и merged в feature/mvp:
+  - Auth;
+  - Supabase schema/demo data;
+  - UI/API contracts;
+  - Data API;
+  - AI forecast engine;
+  - UI Dashboard;
+  - UI SKU Catalog.
+- Ветка feature/ui-sku-detail сейчас может выполняться параллельно. Не трогай файлы карточки SKU.
+- Header авторизованной части уже содержит Dashboard, SKU, Methodology и Выйти. Header не менять.
+- /login остаётся отдельной страницей без protected header.
+- Сейчас выполняется только UI Methodology.
+- Страница /methodology нужна для интервью: она должна объяснять бизнес-логику, AI-подход, ROP/EOQ, сезонность, тренды, аномалии, ограничения MVP и дальнейшее развитие.
+
+Главная цель:
+Собрать законченную страницу /methodology, которая помогает на демо объяснить, как работает AIForecast: какие данные используются, как AI строит прогноз, как появляются ROP/EOQ, риски и рекомендации, почему результаты кэшируются в Supabase, какие ограничения есть у MVP и как систему можно развить после тестового задания.
+
+Разрешено менять:
+- app/(protected)/methodology/page.tsx
+- components/methodology/*
+
+Можно использовать, но не менять без отдельного разрешения:
+- components/ui/*
+- components/charts/ChartContainer.tsx
+- types/api.ts
+- types/ai.ts
+- types/inventory.ts
+
+Запрещено менять:
+- app/(protected)/layout.tsx
+- app/(protected)/page.tsx
+- app/(protected)/sku/page.tsx
+- app/(protected)/sku/[id]/page.tsx
+- app/login/page.tsx
+- app/api/*
+- lib/*
+- supabase/*
+- components/dashboard/*
+- components/sku/*
+- components/charts/dashboard/*
+- components/charts/sku/*
+- components/auth/*
+- components/layout/*
+- app/globals.css
+- package.json
+- package-lock.json
+- PROJECT_PLAN.md
+- PROMPTS.md
+- README.md
+- .env.example
+- .env.local нельзя коммитить
+
+Задача 1. Изучи контекст.
+Прочитай:
+- PROJECT_PLAN.md
+- TASK_DESCRIPTION.md
+- types/ai.ts
+- types/api.ts
+- components/ui/*
+- текущий app/(protected)/methodology/page.tsx
+
+Обязательно учти требования задания:
+- AI-прогноз на 1/3/6 месяцев;
+- сезонность, тренды и аномалии;
+- ROP/EOQ с объяснением параметров;
+- ранние предупреждения о дефиците и затоваривании;
+- рекомендации: перезаказать / ускорить реализацию / списать;
+- dashboard: ABC-анализ, дни покрытия, forecast vs fact.
+
+Задача 2. Обнови app/(protected)/methodology/page.tsx.
+Страница может быть server component.
+Она должна рендерить полноценный methodology screen.
+Не делай fetch к API.
+Не обращайся к Supabase.
+Не обращайся к OpenRouter.
+Не добавляй client component без необходимости.
+
+Задача 3. Создай компоненты в components/methodology/.
+Предлагаемая структура:
+- MethodologyHero.tsx
+- MethodologyDataFlow.tsx
+- MethodologyAiApproach.tsx
+- MethodologyForecasting.tsx
+- MethodologyReorder.tsx
+- MethodologyRisks.tsx
+- MethodologyMvpLimitations.tsx
+- MethodologyRoadmap.tsx
+- MethodologySection.tsx
+- methodology-content.ts
+
+Можно изменить имена, если структура останется понятной.
+
+Задача 4. Содержание страницы.
+Страница должна включать блоки:
+
+1. Hero:
+   - название: "Методология AIForecast"
+   - подзаголовок: как сервис помогает управлять запасами ЛС через AI-прогнозирование.
+
+2. Data flow:
+   Объяснить цепочку:
+   - Supabase demo data;
+   - SKU;
+   - партии и сроки годности;
+   - движения приход/расход/списания;
+   - Next.js API;
+   - OpenRouter AI;
+   - сохранённый forecast;
+   - UI dashboard/catalog/detail.
+
+3. Что получает AI:
+   - паспорт SKU;
+   - текущий остаток;
+   - партии;
+   - сроки годности;
+   - 18 месяцев истории движения;
+   - приходы;
+   - расходы;
+   - списания;
+   - lead time;
+   - стоимость;
+   - условия хранения;
+   - сезонный контекст;
+   - аномалии.
+
+4. Как строится прогноз:
+   - forecast на 1/3/6 месяцев;
+   - сезонность;
+   - тренды;
+   - аномалии;
+   - confidence;
+   - почему прогноз сохраняется в Supabase и не пересчитывается на каждый рендер.
+
+5. ROP/EOQ:
+   Объяснить простым языком:
+   - ROP — точка, когда нужно перезаказывать;
+   - EOQ — экономически рациональный размер заказа;
+   - AI возвращает ROP/EOQ и объяснение параметров;
+   - код валидирует structured JSON и не допускает невозможные значения.
+
+6. Риски:
+   - дефицит;
+   - затоваривание;
+   - списание из-за срока годности;
+   - аномалии;
+   - примеры сообщений на русском.
+
+7. Рекомендации:
+   - перезаказать;
+   - ускорить реализацию;
+   - списать;
+   - мониторить;
+   - скорректировать страховой запас.
+
+8. Что показывает UI:
+   - dashboard;
+   - catalog;
+   - SKU detail;
+   - AI recalculation button.
+
+9. Ограничения MVP:
+   - данные синтетические;
+   - auth демонстрационная;
+   - ERP/WMS/MES не подключены;
+   - локальный Supabase через Docker не используется;
+   - AI-рекомендации требуют бизнес-валидации перед production;
+   - это MVP для демонстрации подхода.
+
+10. Roadmap после MVP:
+   - подключение ERP/WMS/MES;
+   - роли пользователей;
+   - RLS и production auth;
+   - real-time alerts;
+   - audit trail;
+   - approval workflow для закупок;
+   - расширенная аналитика качества прогноза.
+
+Задача 5. Визуальные требования.
+- Русский язык.
+- Аккуратная презентационная подача.
+- Страница должна хорошо смотреться на интервью.
+- Используй карточки, секции, списки, небольшие бейджи.
+- Можно использовать KpiCard, EmptyState или другие existing UI components, но не менять их.
+- Не добавляй новые зависимости.
+- Не используй сложные графики: методология должна быть стабильной и не ломать build.
+- Не делать чрезмерно длинные абзацы.
+- Текст должен быть понятен человеку с бизнес-бэкграундом, не только разработчику.
+
+Задача 6. Не меняй текущие маршруты и header.
+Проверь:
+- /methodology остаётся внутри protected layout.
+- Header не изменён.
+- Dashboard/SKU/Methodology/Выйти остаются как есть.
+- /login не затронут.
+
+Задача 7. Проверка качества.
+Запусти:
+- npm run lint
+- npm run build
+
+После завершения покажи:
+- список созданных/изменённых файлов;
+- git diff --stat;
+- результат npm run lint;
+- результат npm run build;
+- подтверждение, что .env.local не попал в git;
+- подтверждение, что запрещённые файлы не изменялись.
+
+Acceptance criteria:
+- /methodology выглядит как законченная страница продукта.
+- Страница объясняет AI-подход, данные, прогноз, ROP/EOQ, риски, рекомендации, ограничения MVP и roadmap.
+- Нет fetch/API/Supabase/OpenRouter вызовов.
+- Нет fake runtime data.
+- Нет изменений API, lib, Supabase, Auth, Dashboard, Catalog, SKU Detail.
+- npm run lint проходит.
+- npm run build проходит.
+````

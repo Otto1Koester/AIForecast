@@ -8,8 +8,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ForecastHorizonSelector } from "@/components/ui/ForecastHorizonSelector";
 import {
   HORIZON_FORECAST_TITLES,
-  filterForecastPointsByHorizon,
-  hasForecastForHorizon,
+  buildChartPointsForHorizon,
+  hasAnyForecastPoint,
   type ForecastHorizon,
 } from "@/lib/utils/forecast-horizon";
 import type { DashboardForecastVsFactPoint } from "@/types/api";
@@ -29,10 +29,10 @@ export function DashboardForecastPanel({
   const hasFact = points.some((p) => p.fact != null);
 
   const chartPoints = useMemo(
-    () => filterForecastPointsByHorizon(points, horizon),
+    () => buildChartPointsForHorizon(points, horizon),
     [points, horizon],
   );
-  const hasForecastPoint = hasForecastForHorizon(points, horizon);
+  const hasForecastPoint = hasAnyForecastPoint(points);
 
   return (
     <ChartContainer

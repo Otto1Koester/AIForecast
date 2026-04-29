@@ -9,8 +9,8 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { SkuForecastVsFactChart } from "@/components/charts/sku/SkuForecastVsFactChart";
 import {
   HORIZON_FORECAST_TITLES,
-  filterForecastPointsByHorizon,
-  hasForecastForHorizon,
+  buildChartPointsForHorizon,
+  hasAnyForecastPoint,
   type ForecastHorizon,
 } from "@/lib/utils/forecast-horizon";
 import type {
@@ -59,11 +59,11 @@ export function SkuForecastPanel({
   const analysis = latestAiForecast?.analysis.forecast;
 
   const chartPoints = useMemo(
-    () => filterForecastPointsByHorizon(points, horizon),
+    () => buildChartPointsForHorizon(points, horizon),
     [points, horizon],
   );
   const hasFact = chartPoints.some((p) => p.fact !== null);
-  const hasForecastPointForHorizon = hasForecastForHorizon(points, horizon);
+  const hasForecastPointForHorizon = hasAnyForecastPoint(points);
   const hasAnyForecast = points.some((p) => p.forecast !== null);
 
   return (
@@ -72,7 +72,7 @@ export function SkuForecastPanel({
         title="Прогноз и факт"
         description={
           hasAnyForecast
-            ? `${HORIZON_FORECAST_TITLES[horizon]} — пунктирная точка прогноза смещается в зависимости от выбранного горизонта.`
+            ? `${HORIZON_FORECAST_TITLES[horizon]} — выбранный горизонт планирования.`
             : "Сравнение фактического расхода с AI-прогнозом по месяцам."
         }
       >

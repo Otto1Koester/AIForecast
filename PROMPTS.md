@@ -3556,3 +3556,8 @@ feature/ui-sku-detail, feature/ui-methodology и feature/docs завершены
 - результаты ручного smoke-test;
 - рекомендации перед деплоем.
 ````
+
+## Prompt 42 — Переход к деплою после final polish
+````text
+Этап final-polish завершен. Переходим к следующему шагу.
+````

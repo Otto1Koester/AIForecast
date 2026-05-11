@@ -166,22 +166,23 @@ export async function insertForecast(
   input: InsertForecastInput,
 ): Promise<AiForecastRecord> {
   const supabase = createSupabaseAdminClient();
+  const analysis = normalizeForecastAnalysis(input.analysis);
   const { data, error } = await supabase
     .from("ai_forecasts")
     .insert({
       sku_id: input.skuId,
       model: input.model,
       input_hash: input.inputHash,
-      forecast_1m: input.analysis.forecast.oneMonthDemand,
-      forecast_3m: input.analysis.forecast.threeMonthDemand,
-      forecast_6m: input.analysis.forecast.sixMonthDemand,
-      rop: input.analysis.reorder.rop,
-      eoq: input.analysis.reorder.eoq,
-      stockout_risk: input.analysis.risks.stockout.level,
-      overstock_risk: input.analysis.risks.overstock.level,
-      expiry_risk: input.analysis.risks.expiry.level,
-      confidence: input.analysis.forecast.confidence,
-      analysis: input.analysis,
+      forecast_1m: analysis.forecast.oneMonthDemand,
+      forecast_3m: analysis.forecast.threeMonthDemand,
+      forecast_6m: analysis.forecast.sixMonthDemand,
+      rop: analysis.reorder.rop,
+      eoq: analysis.reorder.eoq,
+      stockout_risk: analysis.risks.stockout.level,
+      overstock_risk: analysis.risks.overstock.level,
+      expiry_risk: analysis.risks.expiry.level,
+      confidence: analysis.forecast.confidence,
+      analysis,
       raw_response: input.rawResponse,
     })
     .select(FORECAST_SELECT)

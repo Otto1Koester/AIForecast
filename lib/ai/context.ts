@@ -88,13 +88,19 @@ type PreviousForecastContext = {
 type ReferenceMetricsContext = {
   averageMonthlyOutbound: number;
   lastThreeMonthsOutboundAverage: number;
+  lastSixMonthsOutboundAverage: number;
+  lastTwelveMonthsOutboundAverage: number;
   averageDailyOutbound: number;
+  outboundVolatility: number;
   daysCoverage: number | null;
   writeoffTotal: number;
   inboundTotal: number;
   outboundTotal: number;
   expiryQuantityIn90Days: number;
   expiryQuantityIn180Days: number;
+  nearExpiryQuantity: number;
+  latestOutboundQty: number;
+  lastMovementMonth: string | null;
 };
 
 type HashInputContext = {
@@ -129,6 +135,25 @@ function averageBy<T>(items: T[], selector: (item: T) => number): number {
   }
 
   return roundTo(sumBy(items, selector) / items.length);
+}
+
+function calculateOutboundVolatility(movements: MovementContext[]): number {
+  if (movements.length < 2) {
+    return 0;
+  }
+
+  const values = movements.map((movement) => movement.outboundQty);
+  const average = values.reduce((total, value) => total + value, 0) / values.length;
+
+  if (average <= 0) {
+    return 0;
+  }
+
+  const variance =
+    values.reduce((total, value) => total + (value - average) ** 2, 0) /
+    values.length;
+
+  return roundTo(Math.sqrt(variance) / average, 4);
 }
 
 function mapSkuPassport(sku: SkuItem): SkuPassportContext {
@@ -249,9 +274,22 @@ export async function buildAiForecastContext(
     .slice(-18)
     .map(mapMovement);
   const lastThreeMovements = movementHistory.slice(-3);
+  const lastSixMovements = movementHistory.slice(-6);
+  const lastTwelveMovements = movementHistory.slice(-12);
+  const latestMovement = movementHistory.at(-1);
   const averageMonthlyOutbound = averageBy(
     movementHistory,
     (movement) => movement.outboundQty,
+  );
+  const expiryQuantityIn90Days = calculateQuantityAtRiskByExpiry(
+    bundle.lotsBySkuId.get(sku.id) ?? [],
+    90,
+    referenceDate,
+  );
+  const expiryQuantityIn180Days = calculateQuantityAtRiskByExpiry(
+    bundle.lotsBySkuId.get(sku.id) ?? [],
+    180,
+    referenceDate,
   );
   const referenceMetrics: ReferenceMetricsContext = {
     averageMonthlyOutbound,
@@ -259,21 +297,25 @@ export async function buildAiForecastContext(
       lastThreeMovements,
       (movement) => movement.outboundQty,
     ),
+    lastSixMonthsOutboundAverage: averageBy(
+      lastSixMovements,
+      (movement) => movement.outboundQty,
+    ),
+    lastTwelveMonthsOutboundAverage: averageBy(
+      lastTwelveMovements,
+      (movement) => movement.outboundQty,
+    ),
     averageDailyOutbound: roundTo(averageMonthlyOutbound / 30),
+    outboundVolatility: calculateOutboundVolatility(movementHistory),
     daysCoverage: calculateDaysCoverage(sku.currentStock, averageMonthlyOutbound),
     writeoffTotal: sumBy(movementHistory, (movement) => movement.writeoffQty),
     inboundTotal: sumBy(movementHistory, (movement) => movement.inboundQty),
     outboundTotal: sumBy(movementHistory, (movement) => movement.outboundQty),
-    expiryQuantityIn90Days: calculateQuantityAtRiskByExpiry(
-      bundle.lotsBySkuId.get(sku.id) ?? [],
-      90,
-      referenceDate,
-    ),
-    expiryQuantityIn180Days: calculateQuantityAtRiskByExpiry(
-      bundle.lotsBySkuId.get(sku.id) ?? [],
-      180,
-      referenceDate,
-    ),
+    expiryQuantityIn90Days,
+    expiryQuantityIn180Days,
+    nearExpiryQuantity: expiryQuantityIn90Days,
+    latestOutboundQty: latestMovement?.outboundQty ?? 0,
+    lastMovementMonth: latestMovement?.periodMonth ?? null,
   };
   const skuPassport = mapSkuPassport(sku);
   const costs = {

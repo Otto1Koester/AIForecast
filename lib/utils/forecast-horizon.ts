@@ -4,8 +4,8 @@ export const FORECAST_HORIZONS: readonly ForecastHorizon[] = [1, 3, 6];
 
 const HORIZON_POINT_COUNT: Record<ForecastHorizon, number> = {
   1: 1,
-  3: 2,
-  6: 3,
+  3: 3,
+  6: 6,
 };
 
 export const HORIZON_OPTION_LABELS: Record<ForecastHorizon, string> = {
@@ -31,17 +31,17 @@ type ForecastVsFactPoint = {
 /**
  * Build chart-ready forecast/fact points for a chosen horizon.
  *
- * The DTO ships three trailing forecast points (+1m, +3m, +6m) after the last
- * fact period. For the chart we keep:
- *   horizon = 1 → forecast_1m;
- *   horizon = 3 → forecast_1m + forecast_3m;
- *   horizon = 6 → forecast_1m + forecast_3m + forecast_6m.
+ * The DTO ships monthly forecast points after the last fact period. For the
+ * chart we keep:
+ *   horizon = 1 -> first forecast month;
+ *   horizon = 3 -> first three forecast months;
+ *   horizon = 6 -> all six forecast months.
  *
  * To make the dashed AI-прогноз line visually start from history, we anchor
  * it at the most recent fact point by setting `forecast = fact` on that
  * single point. This is a graphical anchor (the actually observed value),
- * not a forecast value — real forecasts come from forecast_1m/3m/6m and are
- * left untouched.
+ * not a forecast value; real forecasts come from analysis.forecast.monthlyForecast
+ * and are left untouched.
  */
 export function buildChartPointsForHorizon<T extends ForecastVsFactPoint>(
   points: T[],

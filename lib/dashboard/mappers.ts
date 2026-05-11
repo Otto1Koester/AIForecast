@@ -8,7 +8,9 @@ import type {
 } from "@/types/api";
 import type { AiRecommendationPriority, AiRiskLevel } from "@/types/ai";
 import type { AbcClass, SkuItem } from "@/types/inventory";
+import { formatUnitRu } from "@/lib/utils/format";
 import {
+  getRecommendedOrderQuantity,
   mapRecommendationSummary,
   toRiskLevel,
   roundTo,
@@ -25,6 +27,9 @@ import type {
 } from "@/lib/sku/types";
 
 const HIGH_RISKS: readonly AiRiskLevel[] = ["high", "critical"];
+const integerFormatter = new Intl.NumberFormat("ru-RU", {
+  maximumFractionDigits: 0,
+});
 
 function getMetrics(
   metricsBySkuId: SkuMetricsById,
@@ -57,6 +62,22 @@ function riskToPriority(level: AiRiskLevel): AiRecommendationPriority {
 
 function isHighRisk(level: AiRiskLevel): boolean {
   return HIGH_RISKS.includes(level);
+}
+
+function addReorderQuantityToStockoutMessage(
+  message: string,
+  forecast: AiForecastRow,
+  unit: string,
+): string {
+  const recommendedOrderQuantity = getRecommendedOrderQuantity(forecast.analysis);
+
+  if (recommendedOrderQuantity <= 0) {
+    return message;
+  }
+
+  return `${message} Рекомендуется заказать ${integerFormatter.format(
+    Math.round(recommendedOrderQuantity),
+  )} ${formatUnitRu(unit)}.`;
 }
 
 function createKpis(
@@ -154,7 +175,11 @@ function createAlerts(
         id: "stockout",
         level: toRiskLevel(forecast.stockout_risk),
         title: "Риск дефицита",
-        message: forecast.analysis.risks.stockout.explanation,
+        message: addReorderQuantityToStockoutMessage(
+          forecast.analysis.risks.stockout.explanation,
+          forecast,
+          sku.unit,
+        ),
       },
       {
         id: "overstock",

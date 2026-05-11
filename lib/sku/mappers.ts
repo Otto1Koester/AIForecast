@@ -34,6 +34,7 @@ import {
   type SkuItemRow,
 } from "@/lib/sku/types";
 import { calculateDaysToExpiry } from "@/lib/sku/metrics";
+import { normalizeAiForecastAnalysis } from "@/lib/ai/monthly-forecast";
 
 export function toNumber(value: NumericValue | null | undefined): number {
   if (typeof value === "number") {
@@ -67,6 +68,42 @@ export function toRiskLevel(value: string): AiRiskLevel {
   }
 
   return "low";
+}
+
+function toNonNegativeNumberOrNull(value: unknown): number | null {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : null;
+
+  return parsed !== null && Number.isFinite(parsed) && parsed >= 0
+    ? parsed
+    : null;
+}
+
+export function getRecommendedOrderQuantity(
+  analysis: AiForecastAnalysis,
+): number {
+  const reorderQuantity = toNonNegativeNumberOrNull(
+    (
+      analysis.reorder as AiForecastAnalysis["reorder"] & {
+        recommendedOrderQuantity?: unknown;
+      }
+    ).recommendedOrderQuantity,
+  );
+
+  if (reorderQuantity !== null) {
+    return reorderQuantity;
+  }
+
+  const recommendationQuantity = toNonNegativeNumberOrNull(
+    analysis.recommendations.find((recommendation) => recommendation.action === "reorder")
+      ?.suggestedQuantity,
+  );
+
+  return recommendationQuantity ?? 0;
 }
 
 export function mapSkuRow(row: SkuItemRow): SkuItem {
@@ -233,6 +270,7 @@ export function mapReorderInfo(
       eoq: null,
       safetyStock: null,
       leadTimeDemand: null,
+      recommendedOrderQuantity: null,
       explanation: "AI-прогноз ещё не рассчитан.",
     };
   }
@@ -242,6 +280,7 @@ export function mapReorderInfo(
     eoq: toNumber(forecast.eoq),
     safetyStock: forecast.analysis.reorder.safetyStock,
     leadTimeDemand: forecast.analysis.reorder.leadTimeDemand,
+    recommendedOrderQuantity: getRecommendedOrderQuantity(forecast.analysis),
     explanation: forecast.analysis.reorder.explanation,
   };
 }
@@ -293,5 +332,14 @@ export function mapAiMetadata(
 export function normalizeForecastAnalysis(
   value: unknown,
 ): AiForecastAnalysis {
-  return value as AiForecastAnalysis;
+  const analysis = value as AiForecastAnalysis;
+  const analysisWithReorderQuantity = {
+    ...analysis,
+    reorder: {
+      ...analysis.reorder,
+      recommendedOrderQuantity: getRecommendedOrderQuantity(analysis),
+    },
+  };
+
+  return normalizeAiForecastAnalysis(analysisWithReorderQuantity);
 }

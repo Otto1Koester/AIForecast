@@ -335,6 +335,7 @@ export type SkuReorderInfo = {
   eoq: number | null;
   safetyStock: number | null;
   leadTimeDemand: number | null;
+  recommendedOrderQuantity: number | null;
   explanation: string | null;
 };
 

@@ -11,6 +11,7 @@ import type {
   SkuItem,
 } from "@/types/inventory";
 import type { AiForecastRow, SkuComputedMetrics } from "@/lib/sku/types";
+import { getMonthlyForecastPoints } from "@/lib/ai/monthly-forecast";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -23,12 +24,6 @@ function toUtcDateOnly(value: string | Date): Date {
   const date = typeof value === "string" ? new Date(value) : value;
   return new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
-
-function addMonths(date: Date, months: number): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1),
   );
 }
 
@@ -312,28 +307,18 @@ export function buildSkuForecastVsFactPoints(
 
   const latestFactPeriod = maxPeriodDate(movements);
 
-  if (!forecast || latestFactPeriod === null) {
+  if (!forecast) {
     return factPoints;
   }
+  const forecastPoints = getMonthlyForecastPoints(forecast.analysis, {
+    fallbackReferencePeriod: latestFactPeriod,
+  }).map((point) => ({
+    period: point.period,
+    forecast: point.demand,
+    fact: null,
+  }));
 
-  return [
-    ...factPoints,
-    {
-      period: toPeriod(addMonths(latestFactPeriod, 1)),
-      forecast: Number(forecast.forecast_1m),
-      fact: null,
-    },
-    {
-      period: toPeriod(addMonths(latestFactPeriod, 3)),
-      forecast: Number(forecast.forecast_3m),
-      fact: null,
-    },
-    {
-      period: toPeriod(addMonths(latestFactPeriod, 6)),
-      forecast: Number(forecast.forecast_6m),
-      fact: null,
-    },
-  ];
+  return [...factPoints, ...forecastPoints];
 }
 
 export function buildDashboardForecastVsFactPoints(
@@ -357,39 +342,35 @@ export function buildDashboardForecastVsFactPoints(
 
   const latestFactPeriod = maxPeriodDate(movements);
 
-  if (forecasts.length === 0 || latestFactPeriod === null) {
+  if (forecasts.length === 0) {
     return factPoints;
   }
+  const forecastByMonthOffset = new Map<
+    number,
+    { period: string; demand: number }
+  >();
 
-  const forecast1m = forecasts.reduce(
-    (total, forecast) => total + Number(forecast.forecast_1m),
-    0,
-  );
-  const forecast3m = forecasts.reduce(
-    (total, forecast) => total + Number(forecast.forecast_3m),
-    0,
-  );
-  const forecast6m = forecasts.reduce(
-    (total, forecast) => total + Number(forecast.forecast_6m),
-    0,
-  );
+  for (const forecast of forecasts) {
+    for (const point of getMonthlyForecastPoints(forecast.analysis, {
+      fallbackReferencePeriod: latestFactPeriod,
+    })) {
+      const current = forecastByMonthOffset.get(point.monthOffset);
+
+      forecastByMonthOffset.set(point.monthOffset, {
+        period: current?.period ?? point.period,
+        demand: roundTo((current?.demand ?? 0) + point.demand),
+      });
+    }
+  }
 
   return [
     ...factPoints,
-    {
-      period: toPeriod(addMonths(latestFactPeriod, 1)),
-      forecast: roundTo(forecast1m),
-      fact: null,
-    },
-    {
-      period: toPeriod(addMonths(latestFactPeriod, 3)),
-      forecast: roundTo(forecast3m),
-      fact: null,
-    },
-    {
-      period: toPeriod(addMonths(latestFactPeriod, 6)),
-      forecast: roundTo(forecast6m),
-      fact: null,
-    },
+    ...[...forecastByMonthOffset.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([, point]) => ({
+        period: point.period,
+        forecast: roundTo(point.demand),
+        fact: null,
+      })),
   ];
 }

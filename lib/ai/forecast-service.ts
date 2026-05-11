@@ -104,7 +104,11 @@ function assertForecastGuardrails(
     analysis.forecast.sixMonthDemand,
     analysis.reorder.rop,
     analysis.reorder.eoq,
+    analysis.reorder.safetyStock,
+    analysis.reorder.leadTimeDemand,
+    analysis.reorder.recommendedOrderQuantity,
     analysis.forecast.confidence,
+    ...analysis.forecast.monthlyForecast.map((point) => point.demand),
   ];
 
   if (values.some((value) => !Number.isFinite(value))) {
@@ -146,6 +150,7 @@ async function requestOpenRouterForecast(
     try {
       const analysis = validateAiForecastAnalysis(
         extractMessagePayload(completion),
+        { leadTimeDays: context.leadTimeDays },
       );
       assertForecastGuardrails(skuId, analysis);
 

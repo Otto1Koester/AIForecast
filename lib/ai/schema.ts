@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { normalizeAiForecastAnalysis } from "@/lib/ai/monthly-forecast";
 import type { AiForecastAnalysis } from "@/types/ai";
 
 const riskLevelSchema = z.enum(["low", "medium", "high", "critical"]);
@@ -9,6 +10,36 @@ const optionalNonNegativeNumberSchema = z.preprocess(
   (value) => (value === null ? undefined : value),
   nonNegativeNumberSchema.optional(),
 );
+const monthOffsetSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+  z.literal(6),
+]);
+const monthlyForecastSchema = z
+  .array(
+    z
+      .object({
+        monthOffset: monthOffsetSchema,
+        period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+        demand: nonNegativeNumberSchema,
+        explanation: z.string().min(1).optional(),
+      })
+      .strict(),
+  )
+  .length(6)
+  .superRefine((points, ctx) => {
+    const offsets = new Set(points.map((point) => point.monthOffset));
+
+    if (offsets.size !== points.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "monthlyForecast monthOffset values must be unique.",
+      });
+    }
+  });
 
 export const aiForecastAnalysisSchema = z
   .object({
@@ -18,6 +49,7 @@ export const aiForecastAnalysisSchema = z
         oneMonthDemand: nonNegativeNumberSchema,
         threeMonthDemand: nonNegativeNumberSchema,
         sixMonthDemand: nonNegativeNumberSchema,
+        monthlyForecast: monthlyForecastSchema,
         confidence: z.number().finite().min(0).max(1),
         trend: z.enum(["declining", "stable", "growing"]),
         seasonality: z.string().min(1),
@@ -38,6 +70,7 @@ export const aiForecastAnalysisSchema = z
         eoq: nonNegativeNumberSchema,
         safetyStock: nonNegativeNumberSchema,
         leadTimeDemand: nonNegativeNumberSchema,
+        recommendedOrderQuantity: nonNegativeNumberSchema,
         explanation: z.string().min(1),
       })
       .strict(),
@@ -81,7 +114,20 @@ export const aiForecastAnalysisSchema = z
           deadlineDays: optionalNonNegativeNumberSchema,
           reasoning: z.string().min(1),
         })
-        .strict(),
+        .strict()
+        .superRefine((recommendation, ctx) => {
+          if (
+            recommendation.action === "reorder" &&
+            recommendation.suggestedQuantity === undefined
+          ) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["suggestedQuantity"],
+              message:
+                "reorder recommendations must include suggestedQuantity.",
+            });
+          }
+        }),
     ),
     executiveSummary: z.string().min(1),
   })
@@ -96,8 +142,13 @@ function parseJsonString(value: string): unknown {
   return JSON.parse(withoutFence);
 }
 
-export function validateAiForecastAnalysis(value: unknown): AiForecastAnalysis {
+export function validateAiForecastAnalysis(
+  value: unknown,
+  options: { leadTimeDays?: number } = {},
+): AiForecastAnalysis {
   const candidate = typeof value === "string" ? parseJsonString(value) : value;
 
-  return aiForecastAnalysisSchema.parse(candidate);
+  return normalizeAiForecastAnalysis(aiForecastAnalysisSchema.parse(candidate), {
+    leadTimeDays: options.leadTimeDays,
+  });
 }

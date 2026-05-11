@@ -45,6 +45,7 @@ export function SkuReorderPanel({
     reorder.eoq !== null ||
     reorder.safetyStock !== null ||
     reorder.leadTimeDemand !== null ||
+    reorder.recommendedOrderQuantity !== null ||
     reorder.explanation !== null;
 
   return (
@@ -66,7 +67,7 @@ export function SkuReorderPanel({
         />
       ) : (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <MetricRow
               label="ROP — точка перезаказа"
               value={formatStockWithUnit(reorder.rop, unit)}
@@ -86,6 +87,11 @@ export function SkuReorderPanel({
               label="Спрос за срок поставки"
               value={formatInteger(reorder.leadTimeDemand)}
               hint="Ожидаемый расход за период поставки"
+            />
+            <MetricRow
+              label="Рекомендуемый заказ сейчас"
+              value={formatStockWithUnit(reorder.recommendedOrderQuantity, unit)}
+              hint="Практический объём к заказу по решению AI"
             />
           </div>
           {reorder.explanation ? (

@@ -19,10 +19,20 @@ export type AiAnomaly = {
   explanation: string;
 };
 
+export type AiForecastMonthOffset = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type AiMonthlyForecastPoint = {
+  monthOffset: AiForecastMonthOffset;
+  period: string;
+  demand: number;
+  explanation?: string;
+};
+
 export type AiForecastBlock = {
   oneMonthDemand: number;
   threeMonthDemand: number;
   sixMonthDemand: number;
+  monthlyForecast: AiMonthlyForecastPoint[];
   confidence: number;
   trend: AiTrend;
   seasonality: string;
@@ -34,6 +44,7 @@ export type AiReorderBlock = {
   eoq: number;
   safetyStock: number;
   leadTimeDemand: number;
+  recommendedOrderQuantity: number;
   explanation: string;
 };
 
